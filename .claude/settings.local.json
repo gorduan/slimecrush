@@ -15,7 +15,11 @@
       "Bash(dir \"C:\\\\Users\\\\Jan_L\\\\Downloads\\\\slime assit\" /b)",
       "Bash(git init:*)",
       "Bash(git remote add:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: SlimeCrush Match-3 Puzzle Game\n\n- Complete Match-3 game mechanics \\(match detection, cascades, combos\\)\n- Special slimes \\(Striped, Wrapped, Color Bomb\\) with combinations\n- World map with level progression\n- TileMapLayer backgrounds with multiple biomes\n- Touch/swipe controls for mobile\n- Score system with target goals\n- Visual feedback \\(darkening during cooldown\\)\n- Slime shader for color tinting and transparency\n- Win cheat button for testing\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git config:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)"
     ]
   }
 }

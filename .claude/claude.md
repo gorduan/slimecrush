@@ -1,160 +1,199 @@
-# SlimeCrush - Claude Projekt-Dokumentation
+# SlimeCrush - Claude Code Project Context
 
-## Projekt-Übersicht
+> **Version:** 0.1.0 | **Engine:** Godot 4.5 | **Language:** GDScript | **Platform:** Android (Mobile-First)
 
-**Name:** SlimeCrush
-**Typ:** Match-3 Puzzle Game (Candy Crush Clone)
-**Engine:** Godot 4.5
-**Plattform:** Android (Mobile-First)
-**Sprache:** GDScript
+## Quick Reference
 
----
+```bash
+# Run Project (via MCP)
+mcp__godot-mcp__run_project projectPath="e:/Claude Projekte/SlimeCrush JS/godot_project"
 
-## Projektstruktur
+# Stop Project
+mcp__godot-mcp__stop_project
+
+# Get Debug Output
+mcp__godot-mcp__get_debug_output
+
+# Git
+git add . && git commit -m "feat: description" && git push
+```
+
+## Project Overview
+
+**Purpose:** Match-3 Puzzle Game (Candy Crush Clone) for Android
+**Architecture:** Scene-based with Autoload Singletons
+**Repository:** https://github.com/gorduan/slimecrush
+
+## Critical Rules
+
+1. **SIGNALS** for communication - NEVER use direct node references across scenes
+2. **ASYNC** with `await` - NEVER block with loops for animations
+3. **TYPE HINTS** everywhere - Enables autocompletion and catches errors
+4. **MODULATE** for visual effects - NEVER change sprite colors directly
+5. **is_processing** flag - Prevent input during animations
+6. **Mobile-First** - Test touch controls, consider performance
+
+## Subagents (Use Proactively!)
+
+> **Full Registry:** [AGENT_REGISTRY.md](./agents/AGENT_REGISTRY.md)
+
+| Subagent | Use For |
+|----------|---------|
+| `godot-expert` | Scene structure, nodes, Godot patterns |
+| `gdscript-expert` | GDScript syntax, signals, coroutines |
+| `match3-expert` | Game mechanics, combos, specials |
+| `mobile-expert` | Touch/swipe, Android export |
+| `shader-expert` | Visual effects, materials |
+| `code-explorer` | Debugging, "where is X?", error logs |
+
+**Rules:**
+- **New features:** Plan first, then implement
+- **Bugs:** Use `code-explorer` to analyze
+- **UI/Visual:** Consider `shader-expert` for effects
+
+## Project Structure
 
 ```
 SlimeCrush JS/
-├── .claude/                    # Claude Dokumentation
-│   ├── claude.md              # Diese Datei
-│   └── logs/                  # Session-Logs
-├── godot_project/             # Godot 4.5 Projekt
-│   ├── autoload/              # Singleton Manager
-│   │   ├── game_manager.gd    # Spielzustand, Score, Level
-│   │   ├── save_manager.gd    # Highscore & Settings (ConfigFile)
-│   │   └── audio_manager.gd   # Sound-Effekte & Vibration
+├── .claude/                    # Claude Documentation
+│   ├── CLAUDE.md              # This file
+│   ├── agents/                # Subagent definitions
+│   └── commands/              # Custom slash commands
+├── godot_project/             # Godot 4.5 Project
+│   ├── autoload/              # Singleton Managers
+│   │   ├── game_manager.gd    # Game state, score, levels
+│   │   ├── save_manager.gd    # Persistence (ConfigFile)
+│   │   └── audio_manager.gd   # SFX & Vibration
 │   ├── scenes/
-│   │   ├── main.tscn          # Hauptszene mit UI
-│   │   ├── game_board.tscn    # 8x8 Spielfeld
-│   │   └── slime.tscn         # Einzelner Slime mit Partikeln
-│   ├── scripts/
-│   │   ├── main.gd            # UI-Controller
-│   │   ├── game_board.gd      # Match-3 Logik
-│   │   └── slime.gd           # Touch/Swipe & Animationen
-│   ├── project.godot          # Projekt-Konfiguration
-│   └── export_presets.cfg     # Android Export Settings
-└── Prototype/                 # Original HTML/JS Version
-    ├── index.html
-    └── game.js
+│   │   ├── main.tscn          # Main scene with UI
+│   │   ├── game_board.tscn    # 8x8 game board
+│   │   ├── slime.tscn         # Individual slime piece
+│   │   └── world_map.tscn     # Level selection
+│   ├── scripts/               # GDScript files
+│   ├── shaders/               # Visual effects
+│   ├── assets/                # Sprites, sounds
+│   └── resources/             # TileSet, templates
+├── docs/                      # Project documentation
+└── Prototype/                 # Original HTML/JS version
 ```
 
----
+## Game Mechanics Reference
 
-## Implementierte Features
-
-### Spielmechanik
-- [x] 8x8 Spielfeld
-- [x] Match-3 Logik
-- [x] Touch/Swipe-Steuerung
-- [x] Kaskaden-System (Gravity)
-- [x] Combo-Multiplikator
-
-### Slime-Farben (Candy Crush Palette)
-| Farbe | Hex-Code | Enum |
-|-------|----------|------|
-| Rot | `#ff6b6b` | RED |
+### Slime Colors
+| Color | Hex | Enum |
+|-------|-----|------|
+| Red | `#ff6b6b` | RED |
 | Orange | `#ffa502` | ORANGE |
-| Gelb | `#feca57` | YELLOW |
-| Grün | `#26de81` | GREEN |
-| Blau | `#45aaf2` | BLUE |
-| Lila | `#a55eea` | PURPLE |
+| Yellow | `#feca57` | YELLOW |
+| Green | `#26de81` | GREEN |
+| Blue | `#45aaf2` | BLUE |
+| Purple | `#a55eea` | PURPLE |
 
 ### Special Slimes
-| Typ | Erstellung | Effekt |
-|-----|------------|--------|
-| Striped (H) | 4 horizontal | Löscht Zeile |
-| Striped (V) | 4 vertikal | Löscht Spalte |
-| Wrapped | L/T-Form (5+) | 3x3 Explosion |
-| Color Bomb | 5 in Reihe | Alle einer Farbe |
+| Type | Creation | Effect |
+|------|----------|--------|
+| Striped (H) | 4 horizontal | Clears row |
+| Striped (V) | 4 vertical | Clears column |
+| Wrapped | L/T-shape (5+) | 3x3 explosion |
+| Color Bomb | 5 in a row | All of one color |
 
-### Kombinationen
-| Kombination | Effekt |
-|-------------|--------|
-| Striped + Striped | Kreuz (Zeile + Spalte) |
-| Wrapped + Wrapped | 4x4 Explosion |
-| Striped + Wrapped | 3 Zeilen + 3 Spalten |
-| Color Bomb + Farbe | Alle dieser Farbe |
-| Color Bomb + Special | Wandelt alle um |
-| Color Bomb + Color Bomb | Gesamtes Spielfeld |
+### Combinations
+| Combo | Effect |
+|-------|--------|
+| Striped + Striped | Cross (row + column) |
+| Wrapped + Wrapped | 5x5 explosion |
+| Striped + Wrapped | 3 rows + 3 columns |
+| Color Bomb + Color | All of that color |
+| Color Bomb + Special | Converts all |
+| Color Bomb + Color Bomb | Entire board |
 
----
+## Known Issues & Solutions
 
-## Bekannte Probleme & Fixes
+### Input Blocking
+**Problem:** All slimes stop responding to input
+**Solution:** Safety timeout (3s) resets `is_processing` flag
+**File:** `game_board.gd:_check_and_fix_board()`
 
-### Problem 1: Schwarzer Bildschirm beim Start
-**Ursache:** Fehlende `default_font.tres` Referenz
-**Fix:** In `project.godot` die Zeile `theme/custom_font=...` entfernt
+### Shader UV Issues
+**Problem:** Atlas textures break UV-based shaders
+**Solution:** Use simple color tinting, avoid position-based effects
+**File:** `slime_gel.gdshader`
 
-### Problem 2: "Integer division" Warnung
-**Ursache:** GDScript Warnung (nicht kritisch)
-**Status:** Ignoriert (hat keinen Einfluss)
+## GDScript Style Guide
 
-### Problem 3: "unused parameter" Warnung
-**Ursache:** `music_name` Parameter nicht verwendet
-**Fix:** Zu `_music_name` umbenannt
+```gdscript
+# Class declaration
+class_name MyClass
+extends Node2D
 
----
+# Signals at top
+signal something_happened(value: int)
 
-## Entwicklungsumgebung
+# Constants
+const MAX_VALUE: int = 100
 
-### Godot Installation
-- **Pfad:** `E:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe`
-- **Version:** 4.5 stable
+# Exports
+@export var speed: float = 100.0
 
-### MCP Integration
-- **godot-mcp** installiert unter: `e:/Claude Projekte/godot-mcp/`
-- **Konfiguriert mit:** `GODOT_PATH` Umgebungsvariable
+# Public variables
+var is_active: bool = false
 
-### VSCode Setup (Optional)
-- Extension: `geequlim.godot-tools`
-- LSP Port: 6005
+# Private variables (underscore prefix)
+var _internal_state: int = 0
 
----
+# @onready for node references
+@onready var sprite: Sprite2D = $Sprite2D
 
-## Nächste Schritte
+# Lifecycle methods first
+func _ready() -> void:
+    pass
 
-### Hohe Priorität
-- [ ] Spiel starten und testen
-- [ ] Fehler im Debugger analysieren
-- [ ] Touch-Steuerung auf Mobilgerät testen
+func _process(delta: float) -> void:
+    pass
 
-### Mittlere Priorität
-- [ ] Echte Sound-Dateien hinzufügen
-- [ ] Partikel-Effekte verbessern
-- [ ] Level-System erweitern
+# Public methods
+func do_something() -> void:
+    pass
 
-### Niedrige Priorität
-- [ ] Hintergrundmusik
-- [ ] Achievements
-- [ ] Leaderboard
-
----
-
-## Wichtige Befehle
-
-### Godot über MCP starten
-```
-(Nach Claude Code Neustart verfügbar)
+# Private methods
+func _helper_function() -> int:
+    return 0
 ```
 
-### Projekt manuell öffnen
-```bash
-"E:\SteamLibrary\steamapps\common\Godot Engine\godot.windows.opt.tools.64.exe" --path "e:/Claude Projekte/SlimeCrush JS/godot_project"
+## Pre-Task Checklist
+
+```
+[ ] Read relevant docs
+[ ] Check current game state
+[ ] Identify affected files
+[ ] Consider mobile implications
 ```
 
-### APK exportieren
-1. In Godot: Project → Export
-2. Android Preset auswählen
-3. Export Project klicken
+## Post-Task Checklist
 
----
+```
+[ ] Test in running game
+[ ] Check debug output for errors
+[ ] Update TODO if needed
+[ ] Git commit with proper format
+```
 
-## Ressourcen & Links
+## Environment
+
+| Tool | Path/Value |
+|------|------------|
+| Godot 4.5 | `E:\SteamLibrary\steamapps\common\Godot Engine\` |
+| godot-mcp | `e:/Claude Projekte/godot-mcp/` |
+| Project | `e:/Claude Projekte/SlimeCrush JS/godot_project` |
+
+## Resources
 
 - [Godot Docs](https://docs.godotengine.org/en/stable/)
-- [GDScript Referenz](https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_basics.html)
+- [GDScript Style Guide](https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_styleguide.html)
+- [Best Practices](https://docs.godotengine.org/en/stable/tutorials/best_practices/index.html)
 - [Android Export](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_android.html)
-- [godot-mcp GitHub](https://github.com/Coding-Solo/godot-mcp)
 
 ---
 
-*Zuletzt aktualisiert: 2024-12-20*
+**Last Updated:** 2025-12-21
+**Maintained by:** Claude Code
