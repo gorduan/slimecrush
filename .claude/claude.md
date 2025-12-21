@@ -45,11 +45,13 @@ git add . && git commit -m "feat: description" && git push
 | `mobile-expert` | Touch/swipe, Android export |
 | `shader-expert` | Visual effects, materials |
 | `code-explorer` | Debugging, "where is X?", error logs |
+| `git-expert` | GitHub issues, milestones, releases |
 
 **Rules:**
-- **New features:** Plan first, then implement
-- **Bugs:** Use `code-explorer` to analyze
+- **New features:** Create GitHub issue first, then implement
+- **Bugs:** Use `code-explorer` to analyze, track in issue
 - **UI/Visual:** Consider `shader-expert` for effects
+- **Commits:** Follow conventional commit format
 
 ## Project Structure
 
@@ -58,7 +60,9 @@ SlimeCrush JS/
 ├── .claude/                    # Claude Documentation
 │   ├── CLAUDE.md              # This file
 │   ├── agents/                # Subagent definitions
-│   └── commands/              # Custom slash commands
+│   ├── commands/              # Custom slash commands
+│   ├── workflows/             # GitHub workflow guides
+│   └── context/               # GDScript patterns, etc.
 ├── godot_project/             # Godot 4.5 Project
 │   ├── autoload/              # Singleton Managers
 │   │   ├── game_manager.gd    # Game state, score, levels
@@ -176,7 +180,43 @@ func _helper_function() -> int:
 [ ] Check debug output for errors
 [ ] Update TODO if needed
 [ ] Git commit with proper format
+[ ] Update/close GitHub issue if applicable
 ```
+
+## GitHub Workflow
+
+> **Full Guide:** [GITHUB_WORKFLOW.md](./workflows/GITHUB_WORKFLOW.md)
+
+### Issue-First Development
+
+1. **New Feature?** → Create issue first: `gh issue create --title "feat: ..."`
+2. **Found Bug?** → Document in issue with steps to reproduce
+3. **Working on Issue?** → Add progress comments
+4. **Finished?** → Reference issue in commit: `Closes #42`
+
+### Commit Format
+
+```bash
+type: short description
+
+- Detail 1
+- Detail 2
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+```
+
+Types: `feat`, `fix`, `refactor`, `docs`, `style`, `perf`, `chore`
+
+### Milestones
+
+| Milestone | Focus |
+|-----------|-------|
+| v0.1.0 | Core Match-3 ✅ |
+| v0.2.0 | Special Slimes |
+| v0.3.0 | Levels & Progression |
+| v1.0.0 | Release Ready |
 
 ## Environment
 

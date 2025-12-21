@@ -1,7 +1,7 @@
 # Agent Registry - SlimeCrush
 
 > **Last Updated:** 2025-12-21
-> **Total Agents:** 6
+> **Total Agents:** 7
 
 ---
 
@@ -15,6 +15,7 @@
 | `mobile-expert` | Platform | Touch/swipe, Android export |
 | `shader-expert` | Graphics | Visual effects, materials |
 | `code-explorer` | Analysis | Debugging, error logs, "where is X?" |
+| `git-expert` | Version Control | Git, GitHub issues, milestones, releases |
 
 ---
 
@@ -142,6 +143,27 @@
 "Why does the game freeze?"
 "Where is scoring calculated?"
 "Find all uses of signal X"
+```
+
+---
+
+### git-expert
+
+**File:** `git-expert.md`
+**Description:** Git and GitHub workflow specialist
+
+**Primary Use Cases:**
+- Commit formatting and conventions
+- GitHub Issues and bug tracking
+- Milestone management
+- Pull Request workflow
+- Release tagging
+
+**When to Use:**
+```
+"Create issue for new feature"
+"Set up milestone for v0.2.0"
+"Add bug comment to issue #42"
 ```
 
 ---
