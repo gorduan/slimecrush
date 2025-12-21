@@ -15,6 +15,7 @@ extends Control
 @onready var game_over_panel: Panel = $UILayer/UI/GameOverPanel
 @onready var final_score_label: Label = $UILayer/UI/LevelCompletePanel/VBoxContainer/FinalScore
 @onready var gameover_score_label: Label = $UILayer/UI/GameOverPanel/VBoxContainer/FinalScore
+@onready var menu_button: Button = $UILayer/UI/TopBar/MenuButton
 
 # GameBoard base position (relative to screen)
 const GAME_BOARD_BASE_X: float = 72.0
@@ -23,11 +24,18 @@ const LEVEL_HEIGHT: float = 1280.0
 
 
 func _ready() -> void:
+	# Load game from selected slot
+	GameManager.load_from_slot()
+
 	_connect_signals()
 	_update_ui()
 	_hide_panels()
 	_generate_world()
 	SaveManager.increment_games_played()
+
+	# Connect menu button
+	if menu_button:
+		menu_button.pressed.connect(_on_menu_pressed)
 
 
 func _generate_world() -> void:
@@ -204,3 +212,17 @@ func _on_win_cheat_pressed() -> void:
 	# Set score to target + extra to trigger win
 	GameManager.score = GameManager.target_score + 100
 	GameManager.check_win_condition()
+
+
+func _on_menu_pressed() -> void:
+	AudioManager.play_sfx("button")
+
+	# Save current progress
+	GameManager.save_to_slot()
+
+	# Fade out and return to mode selection
+	var tween = create_tween()
+	tween.tween_property(self, "modulate:a", 0.0, 0.3)
+	await tween.finished
+
+	get_tree().change_scene_to_file("res://scenes/mode_selection.tscn")

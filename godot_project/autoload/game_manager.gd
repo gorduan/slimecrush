@@ -76,6 +76,13 @@ var target_score: int = 1000
 var combo_count: int = 0
 var is_game_active: bool = true
 
+# Current mode and slot (managed by SaveManager)
+var current_mode: String:
+	get: return SaveManager.active_mode
+
+var current_slot: int:
+	get: return SaveManager.active_slot
+
 # Scoring constants
 const SCORE_MATCH_3: int = 30
 const SCORE_MATCH_4: int = 60
@@ -85,7 +92,8 @@ const COMBO_MULTIPLIER: float = 1.5
 
 
 func _ready() -> void:
-	reset_game()
+	# Don't reset on ready - wait for slot selection
+	pass
 
 
 func reset_game() -> void:
@@ -95,6 +103,32 @@ func reset_game() -> void:
 	target_score = 1000
 	combo_count = 0
 	is_game_active = true
+
+
+func load_from_slot() -> void:
+	var data = SaveManager.get_current_slot_data()
+	if data.is_empty:
+		# New game
+		reset_game()
+	else:
+		# Continue from saved progress
+		score = 0  # Start fresh score for this session
+		level = data.get("level", 1)
+		moves = 30 + (level * 2)
+		target_score = 1000 + (level - 1) * 500
+		combo_count = 0
+		is_game_active = true
+
+
+func save_to_slot() -> void:
+	var data = {
+		"score": SaveManager.get_highscore(),  # Best score achieved
+		"level": level,
+		"max_level": max(level, SaveManager.get_max_level()),
+		"total_matches": SaveManager.get_total_matches(),
+		"games_played": SaveManager.get_games_played()
+	}
+	SaveManager.save_current_slot_data(data)
 
 
 func start_level(level_num: int) -> void:
