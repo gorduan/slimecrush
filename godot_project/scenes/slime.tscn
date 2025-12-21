@@ -1,0 +1,48 @@
+[gd_scene load_steps=4 format=3 uid="uid://c6xqvg7mwqx8s"]
+
+[ext_resource type="Script" path="res://scripts/slime.gd" id="1_slime"]
+[ext_resource type="Shader" path="res://shaders/slime_gel.gdshader" id="2_gel_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_gel"]
+resource_local_to_scene = true
+shader = ExtResource("2_gel_shader")
+shader_parameter/base_alpha = 0.92
+shader_parameter/color_tint = Color(1, 1, 1, 1)
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_match"]
+emission_shape = 1
+emission_sphere_radius = 20.0
+direction = Vector3(0, -1, 0)
+spread = 180.0
+initial_velocity_min = 50.0
+initial_velocity_max = 100.0
+gravity = Vector3(0, 200, 0)
+scale_min = 0.5
+scale_max = 1.5
+color = Color(1, 1, 1, 1)
+
+[node name="Slime" type="Node2D"]
+script = ExtResource("1_slime")
+
+[node name="AnimatedSprite" type="AnimatedSprite2D" parent="."]
+material = SubResource("ShaderMaterial_gel")
+scale = Vector2(1.6, 1.6)
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+visible = false
+
+[node name="SpecialOverlay" type="Sprite2D" parent="."]
+visible = false
+
+[node name="SelectionHighlight" type="Sprite2D" parent="."]
+visible = false
+
+[node name="MatchParticles" type="GPUParticles2D" parent="."]
+emitting = false
+amount = 12
+process_material = SubResource("ParticleProcessMaterial_match")
+lifetime = 0.5
+one_shot = true
+explosiveness = 1.0
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]

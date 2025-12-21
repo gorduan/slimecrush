@@ -1,0 +1,330 @@
+[gd_scene load_steps=7 format=3 uid="uid://bx8mwn5j7d3vy"]
+
+[ext_resource type="Script" uid="uid://c5hq37klhvuwt" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="PackedScene" uid="uid://dkp8qx6h2t7gv" path="res://scenes/game_board.tscn" id="2_board"]
+[ext_resource type="PackedScene" uid="uid://daqkvnnq4iooa" path="res://scenes/world_map.tscn" id="3_world_map"]
+[ext_resource type="Script" path="res://scripts/game_camera.gd" id="4_camera"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0, 0, 0, 0.8)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button"]
+bg_color = Color(1, 0.42, 0.42, 1)
+corner_radius_top_left = 25
+corner_radius_top_right = 25
+corner_radius_bottom_right = 25
+corner_radius_bottom_left = 25
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main")
+
+[node name="GameWorld" type="Node2D" parent="."]
+
+[node name="GameCamera" type="Camera2D" parent="GameWorld"]
+position = Vector2(360, 640)
+script = ExtResource("4_camera")
+
+[node name="WorldMap" parent="GameWorld" instance=ExtResource("3_world_map")]
+z_index = -10
+scale = Vector2(3, 3)
+
+[node name="GameBoard" parent="GameWorld" instance=ExtResource("2_board")]
+position = Vector2(72, 220)
+
+[node name="Background" type="ColorRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.1, 0.15, 1)
+
+[node name="UILayer" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="UI" type="Control" parent="UILayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TopBar" type="VBoxContainer" parent="UILayer/UI"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 200.0
+grow_horizontal = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="UILayer/UI/TopBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.84, 0.34, 1)
+theme_override_font_sizes/font_size = 48
+text = "SLIMECRUSH"
+horizontal_alignment = 1
+
+[node name="StatsRow" type="HBoxContainer" parent="UILayer/UI/TopBar"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="ScoreContainer" type="VBoxContainer" parent="UILayer/UI/TopBar/StatsRow"]
+layout_mode = 2
+
+[node name="ScoreLabel" type="Label" parent="UILayer/UI/TopBar/StatsRow/ScoreContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 18
+text = "PUNKTE"
+horizontal_alignment = 1
+
+[node name="ScoreValue" type="Label" parent="UILayer/UI/TopBar/StatsRow/ScoreContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 36
+text = "0"
+horizontal_alignment = 1
+
+[node name="LevelContainer" type="VBoxContainer" parent="UILayer/UI/TopBar/StatsRow"]
+layout_mode = 2
+
+[node name="LevelLabel" type="Label" parent="UILayer/UI/TopBar/StatsRow/LevelContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 18
+text = "LEVEL"
+horizontal_alignment = 1
+
+[node name="LevelValue" type="Label" parent="UILayer/UI/TopBar/StatsRow/LevelContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 36
+text = "1"
+horizontal_alignment = 1
+
+[node name="MovesContainer" type="VBoxContainer" parent="UILayer/UI/TopBar/StatsRow"]
+layout_mode = 2
+
+[node name="MovesLabel" type="Label" parent="UILayer/UI/TopBar/StatsRow/MovesContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 18
+text = "ZÜGE"
+horizontal_alignment = 1
+
+[node name="MovesValue" type="Label" parent="UILayer/UI/TopBar/StatsRow/MovesContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 36
+text = "30"
+horizontal_alignment = 1
+
+[node name="SecondRow" type="HBoxContainer" parent="UILayer/UI/TopBar"]
+layout_mode = 2
+theme_override_constants/separation = 60
+alignment = 1
+
+[node name="HighscoreContainer" type="VBoxContainer" parent="UILayer/UI/TopBar/SecondRow"]
+layout_mode = 2
+
+[node name="HighscoreLabel" type="Label" parent="UILayer/UI/TopBar/SecondRow/HighscoreContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.84, 0.34, 1)
+theme_override_font_sizes/font_size = 16
+text = "HIGHSCORE"
+horizontal_alignment = 1
+
+[node name="HighscoreValue" type="Label" parent="UILayer/UI/TopBar/SecondRow/HighscoreContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.84, 0.34, 1)
+theme_override_font_sizes/font_size = 28
+text = "0"
+horizontal_alignment = 1
+
+[node name="TargetContainer" type="VBoxContainer" parent="UILayer/UI/TopBar/SecondRow"]
+layout_mode = 2
+
+[node name="TargetLabel" type="Label" parent="UILayer/UI/TopBar/SecondRow/TargetContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.27, 0.67, 0.95, 1)
+theme_override_font_sizes/font_size = 16
+text = "ZIEL"
+horizontal_alignment = 1
+
+[node name="TargetValue" type="Label" parent="UILayer/UI/TopBar/SecondRow/TargetContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.27, 0.67, 0.95, 1)
+theme_override_font_sizes/font_size = 28
+text = "1000"
+horizontal_alignment = 1
+
+[node name="ComboDisplay" type="Label" parent="UILayer/UI"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -40.0
+offset_right = 150.0
+offset_bottom = 40.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 0.84, 0.34, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 52
+text = "3x COMBO!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LevelCompletePanel" type="Panel" parent="UILayer/UI"]
+visible = false
+z_index = 100
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -150.0
+offset_right = 180.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UILayer/UI/LevelCompletePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Title" type="Label" parent="UILayer/UI/LevelCompletePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.15, 0.87, 0.51, 1)
+theme_override_font_sizes/font_size = 40
+text = "GESCHAFFT!"
+horizontal_alignment = 1
+
+[node name="FinalScore" type="Label" parent="UILayer/UI/LevelCompletePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 56
+text = "0"
+horizontal_alignment = 1
+
+[node name="NextButton" type="Button" parent="UILayer/UI/LevelCompletePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "WEITER"
+
+[node name="GameOverPanel" type="Panel" parent="UILayer/UI"]
+visible = false
+z_index = 100
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -150.0
+offset_right = 180.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UILayer/UI/GameOverPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Title" type="Label" parent="UILayer/UI/GameOverPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.42, 0.42, 1)
+theme_override_font_sizes/font_size = 40
+text = "GAME OVER"
+horizontal_alignment = 1
+
+[node name="FinalScore" type="Label" parent="UILayer/UI/GameOverPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 56
+text = "0"
+horizontal_alignment = 1
+
+[node name="RetryButton" type="Button" parent="UILayer/UI/GameOverPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "NOCHMAL"
+
+[node name="BottomButtons" type="HBoxContainer" parent="UILayer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -180.0
+offset_top = -100.0
+offset_right = 180.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 30
+alignment = 1
+
+[node name="NewGameButton" type="Button" parent="UILayer/BottomButtons"]
+custom_minimum_size = Vector2(160, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "NEU"
+
+[node name="ShuffleButton" type="Button" parent="UILayer/BottomButtons"]
+custom_minimum_size = Vector2(160, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "MISCHEN"
+
+[node name="WinButton" type="Button" parent="UILayer/BottomButtons"]
+custom_minimum_size = Vector2(80, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.15, 0.87, 0.51, 1)
+text = "WIN"
+
+[connection signal="pressed" from="UILayer/UI/LevelCompletePanel/VBoxContainer/NextButton" to="." method="_on_next_level_pressed"]
+[connection signal="pressed" from="UILayer/UI/GameOverPanel/VBoxContainer/RetryButton" to="." method="_on_new_game_pressed"]
+[connection signal="pressed" from="UILayer/BottomButtons/NewGameButton" to="." method="_on_new_game_pressed"]
+[connection signal="pressed" from="UILayer/BottomButtons/ShuffleButton" to="." method="_on_shuffle_pressed"]
+[connection signal="pressed" from="UILayer/BottomButtons/WinButton" to="." method="_on_win_cheat_pressed"]

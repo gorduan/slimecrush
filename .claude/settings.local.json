@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"uv --version\")",
+      "Bash(node --version:*)",
+      "Bash(npm install)",
+      "Bash(claude mcp add:*)",
+      "Bash(dir \"C:\\\\Program Files\\\\Godot*\")",
+      "Bash(dir \"C:\\\\Godot*\")",
+      "Bash(dir:*)",
+      "Bash(claude mcp remove:*)",
+      "Bash(\"E:\\\\SteamLibrary\\\\steamapps\\\\common\\\\Godot Engine\\\\godot.windows.opt.tools.64.exe\" --path \"e:/Claude Projekte/SlimeCrush JS/godot_project\" --headless --quit)",
+      "Bash(timeout:*)",
+      "Bash(ping:*)",
+      "Bash(dir \"C:\\\\Users\\\\Jan_L\\\\Downloads\\\\slime assit\" /b)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
