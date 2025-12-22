@@ -17,18 +17,18 @@ class_name WorldMap
 # TileSet will be assigned in editor or loaded
 var world_tileset: TileSet
 
-# Tile size in pixels (after 3x scale: 48px per tile)
+# Tile size in pixels
 const TILE_SIZE: int = 16
 
 # Screen size in pixels (native viewport)
 const SCREEN_WIDTH: int = 720
 const SCREEN_HEIGHT: int = 1280
 
-# Map dimensions in tiles (at 3x scale, so divide by 3 for tile count)
-# 720/3 = 240px viewport, 240/16 = 15 tiles wide
-# 1280/3 = ~426px viewport, 426/16 = ~27 tiles per screen
-var map_width_tiles: int = 15  # 15 tiles wide
-var tiles_per_screen: int = 27  # ~27 tiles per screen height
+# Map dimensions in tiles
+# 32 tiles wide (scaled 1.5x in scene, covers screen + overflow)
+# With scale 1.5, each tile is 24px, screen 1280px tall = ~54 tiles visible
+var map_width_tiles: int = 32  # 32 tiles wide
+var tiles_per_screen: int = 54  # Tiles per screen at scale 1.5
 
 # Current level offset (which screen we're on, 0 = first level)
 var current_level_offset: int = 0
@@ -55,6 +55,15 @@ var terrain_source_ids: Dictionary = {
 
 # Noise generator for terrain
 var noise: FastNoiseLite
+var path_noise: FastNoiseLite  # Separate noise for smooth path wobble
+
+# Path generation - center path with wobble
+const PATH_CENTER: int = 16       # Center of the path (middle of 32 tiles)
+const PATH_WIDTH: int = 10        # Width of main path (10 tiles - doubled)
+const PATH_WOBBLE_MAX: int = 3    # Max wobble (-3 to +3 tiles)
+
+# Debug grid overlay
+var debug_grid_visible: bool = false
 
 
 func _ready() -> void:
@@ -68,6 +77,12 @@ func _setup_noise() -> void:
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
 	noise.frequency = 0.05
 	noise.seed = randi()
+
+	# Path noise - lower frequency for smooth, gentle curves
+	path_noise = FastNoiseLite.new()
+	path_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	path_noise.frequency = 0.08  # Smooth curves, not too jagged
+	path_noise.seed = randi()
 
 
 func set_tileset(tileset: TileSet) -> void:
@@ -147,52 +162,42 @@ func _clear_screen_area(y_start: int) -> void:
 
 
 func _generate_terrain_for_area(y_start: int, y_end: int, biome: Dictionary) -> void:
-	# Collect cells by terrain type for batch processing
-	var primary_cells: Array[Vector2i] = []
-	var secondary_cells: Array[Vector2i] = []
-	var accent_cells: Array[Vector2i] = []
-	var grass_cells: Array[Vector2i] = []
-	var snow_cells: Array[Vector2i] = []
+	# Center path with slight wobble (-1 to +1), terrain on sides
+	var half_width: int = PATH_WIDTH / 2  # 2
 
-	# Generate terrain using noise
+	# Collect cells for terrain (only on sides, not in path)
+	var primary_cells: Array[Vector2i] = []
+	var accent_cells: Array[Vector2i] = []
+
 	for x in range(map_width_tiles):
 		for y in range(y_start, y_end):
+			var pos = Vector2i(x, y)
+
+			# Get path offset for this row using smooth noise (-1, 0, or +1)
+			var path_offset: int = _get_path_offset(y)
+			var current_center: int = PATH_CENTER + path_offset
+
+			# Calculate path bounds for this row
+			var path_left: int = current_center - half_width
+			var path_right: int = current_center + half_width
+
+			# Skip path tiles - let dirt base show through
+			if x >= path_left and x <= path_right:
+				continue
+
+			# All side tiles get primary terrain
+			primary_cells.append(pos)
+
+			# Add some accent variation using noise
 			var noise_val = noise.get_noise_2d(x, y)
+			if noise_val > 0.3:
+				accent_cells.append(pos)
 
-			# Terrain Layer 1 - Primary terrain patches
-			if noise_val > 0.2:
-				primary_cells.append(Vector2i(x, y))
-			elif noise_val > -0.1:
-				secondary_cells.append(Vector2i(x, y))
-
-			# Terrain Layer 2 - Secondary details (sparser)
-			var noise_val2 = noise.get_noise_2d(x + 100, y + 100)
-			if noise_val2 > 0.4:
-				accent_cells.append(Vector2i(x, y))
-
-			# Grass layer - Only for grass biome
-			if biome["primary"] == TerrainType.GRASS:
-				var grass_noise = noise.get_noise_2d(x + 200, y + 200)
-				if grass_noise > 0.3:
-					grass_cells.append(Vector2i(x, y))
-
-			# Snow layer - Only for snow biome
-			if biome["primary"] == TerrainType.SNOW:
-				var snow_noise = noise.get_noise_2d(x + 300, y + 300)
-				if snow_noise > 0.2:
-					snow_cells.append(Vector2i(x, y))
-
-	# Apply terrain in batches for better performance and autotiling
+	# Apply terrain in batches
 	if primary_cells.size() > 0:
 		terrain_layer1.set_cells_terrain_connect(primary_cells, 0, biome["primary"])
-	if secondary_cells.size() > 0:
-		terrain_layer1.set_cells_terrain_connect(secondary_cells, 0, biome["secondary"])
 	if accent_cells.size() > 0:
 		terrain_layer2.set_cells_terrain_connect(accent_cells, 0, biome["accent"])
-	if grass_cells.size() > 0:
-		grass_layer.set_cells_terrain_connect(grass_cells, 0, TerrainType.GRASS)
-	if snow_cells.size() > 0:
-		snow_layer.set_cells_terrain_connect(snow_cells, 0, TerrainType.SNOW)
 
 
 func clear_all_layers() -> void:
@@ -267,3 +272,85 @@ func world_to_tile(world_pos: Vector2) -> Vector2i:
 # Utility function to convert tile position to world position (center of tile)
 func tile_to_world(tile_pos: Vector2i) -> Vector2:
 	return Vector2(tile_pos.x * TILE_SIZE + TILE_SIZE / 2, tile_pos.y * TILE_SIZE + TILE_SIZE / 2)
+
+
+# ============================================
+# PATH HELPER - Smooth wobble for natural path
+# ============================================
+
+func _get_path_offset(y: int) -> int:
+	# Use noise to get smooth path offset (-PATH_WOBBLE_MAX to +PATH_WOBBLE_MAX)
+	# The noise provides smooth transitions so the path looks natural
+	var noise_val: float = path_noise.get_noise_1d(float(y))
+
+	# Map noise (-1 to 1) to offset (-3 to +3)
+	var offset: int = roundi(noise_val * PATH_WOBBLE_MAX)
+	return clampi(offset, -PATH_WOBBLE_MAX, PATH_WOBBLE_MAX)
+
+
+func _is_path_tile(x: int, y: int) -> bool:
+	# Check if position is in the path (accounting for wobble)
+	var path_offset: int = _get_path_offset(y)
+	var current_center: int = PATH_CENTER + path_offset
+	var half_width: int = PATH_WIDTH / 2
+	var path_left: int = current_center - half_width
+	var path_right: int = current_center + half_width
+	return x >= path_left and x <= path_right
+
+
+# ============================================
+# DEBUG GRID - Toggle visible grid overlay
+# ============================================
+
+func toggle_debug_grid(active: bool) -> void:
+	debug_grid_visible = active
+	queue_redraw()
+
+
+func _draw() -> void:
+	if not debug_grid_visible:
+		return
+
+	# Draw grid lines for visible area
+	var grid_color = Color(1, 1, 1, 0.5)
+	var path_color = Color(1, 0.84, 0.34, 0.5)  # Gold for path area
+	var line_width = 1.0
+
+	# Calculate visible y range (2 screens worth)
+	var y_start = -tiles_per_screen
+	var y_end = tiles_per_screen * 2
+
+	# Draw vertical lines
+	for x in range(map_width_tiles + 1):
+		var x_pos = x * TILE_SIZE
+		draw_line(Vector2(x_pos, y_start * TILE_SIZE), Vector2(x_pos, y_end * TILE_SIZE), grid_color, line_width)
+
+	# Draw horizontal lines
+	for y in range(y_start, y_end + 1):
+		var y_pos = y * TILE_SIZE
+		draw_line(Vector2(0, y_pos), Vector2(map_width_tiles * TILE_SIZE, y_pos), grid_color, line_width)
+
+	# Highlight path area with colored overlay
+	for y in range(y_start, y_end):
+		var path_offset: int = _get_path_offset(y)
+		var current_center: int = PATH_CENTER + path_offset
+		var half_width: int = PATH_WIDTH / 2
+		var path_left: int = current_center - half_width
+		var path_right: int = current_center + half_width
+
+		# Draw path highlight
+		var rect = Rect2(
+			path_left * TILE_SIZE,
+			y * TILE_SIZE,
+			(path_right - path_left + 1) * TILE_SIZE,
+			TILE_SIZE
+		)
+		draw_rect(rect, path_color, false, 2.0)
+
+	# Draw tile coordinates for reference (every 5 tiles)
+	var font = ThemeDB.fallback_font
+	var font_size = 10
+	for x in range(0, map_width_tiles, 5):
+		for y in range(y_start, y_end, 5):
+			var pos = Vector2(x * TILE_SIZE + 2, y * TILE_SIZE + 12)
+			draw_string(font, pos, "%d,%d" % [x, y], HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.WHITE)

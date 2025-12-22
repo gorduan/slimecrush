@@ -16,6 +16,11 @@ var selected_slime: Slime = null
 var is_processing: bool = false
 var is_input_enabled: bool = true
 
+# Cheat mode for spawning/replacing slimes
+var cheat_spawn_mode: bool = false
+var cheat_spawn_color: GameManager.SlimeColor = GameManager.SlimeColor.RED
+var cheat_spawn_special: GameManager.SpecialType = GameManager.SpecialType.NONE
+
 # Safety timeout for stuck processing
 var processing_start_time: float = 0.0
 const PROCESSING_TIMEOUT: float = 3.0  # Reset after 3 seconds
@@ -24,7 +29,7 @@ const PROCESSING_TIMEOUT: float = 3.0  # Reset after 3 seconds
 var queued_swap: Dictionary = {}  # {"slime1": Slime, "slime2": Slime}
 
 # Animation timing
-const SWAP_DURATION: float = 0.2
+const SWAP_DURATION: float = 0.25  # Duration for hop swap animation
 const FALL_DURATION: float = 0.3
 const MATCH_DELAY: float = 0.1
 const CASCADE_DELAY: float = 0.15
@@ -138,6 +143,11 @@ func _on_slime_clicked(slime: Slime) -> void:
 	if not is_input_enabled or is_processing:
 		return
 
+	# Cheat mode: Replace clicked slime with selected type
+	if cheat_spawn_mode:
+		_replace_slime_at(slime.grid_position, cheat_spawn_color, cheat_spawn_special)
+		return
+
 	if selected_slime == null:
 		# First selection
 		selected_slime = slime
@@ -190,17 +200,18 @@ func _try_swap(slime1: Slime, slime2: Slime) -> void:
 
 	AudioManager.play_sfx("swap")
 
-	# Perform swap animation
-	var pos1 = slime1.grid_position
-	var pos2 = slime2.grid_position
+	# Store original world positions BEFORE any animation
 	var world_pos1 = slime1.position
 	var world_pos2 = slime2.position
 
-	# Swap in data
+	# Swap in data FIRST
 	_swap_slimes(slime1, slime2)
 
-	# Animate
-	await slime1.animate_swap(world_pos2, SWAP_DURATION)
+	# Animate BOTH slimes simultaneously with hop animation
+	# They hop in opposite directions to pass each other
+	# Don't await slime1 - let both run in parallel
+	slime1.animate_swap_hop(world_pos2, 1, SWAP_DURATION)
+	await slime2.animate_swap_hop(world_pos1, -1, SWAP_DURATION)
 
 	# Check for matches or special combinations
 	var has_special_combo = _check_special_combination(slime1, slime2)
@@ -219,10 +230,12 @@ func _try_swap(slime1: Slime, slime2: Slime) -> void:
 		await _process_matches()
 		GameManager.check_win_condition()
 	else:
-		# Invalid move - swap back
+		# Invalid move - swap back with hop animation
+		# Swap data back first
 		_swap_slimes(slime1, slime2)
-		slime1.animate_swap(world_pos1, SWAP_DURATION)
-		await slime2.animate_swap(world_pos2, SWAP_DURATION)
+		# Now animate back to their original positions
+		slime1.animate_swap_hop(world_pos1, -1, SWAP_DURATION)  # Hop back
+		await slime2.animate_swap_hop(world_pos2, 1, SWAP_DURATION)  # Hop back
 
 	# Final board check before re-enabling input
 	_force_fill_empty_cells()
@@ -1043,6 +1056,33 @@ func _regenerate_board() -> void:
 
 	# Create new board
 	_initialize_board()
+
+
+# Cheat mode: Replace slime at position with new color and special type
+func _replace_slime_at(pos: Vector2i, color: GameManager.SlimeColor, special: GameManager.SpecialType) -> void:
+	if not _is_valid_position(pos):
+		return
+
+	# Remove old slime
+	var old_slime = board[pos.x][pos.y]
+	if old_slime:
+		old_slime.queue_free()
+
+	# Create new slime with specified properties
+	var slime = SlimeScene.instantiate()
+	add_child(slime)
+	slime.setup(color, pos, special)
+
+	# Connect signals
+	slime.clicked.connect(_on_slime_clicked)
+	slime.swap_requested.connect(func(dir): _on_swap_requested(dir, slime))
+
+	# Add to board
+	board[pos.x][pos.y] = slime
+
+	# Play spawn animation
+	slime.animate_special_creation()
+	AudioManager.play_sfx("special")
 
 
 # Visual effects

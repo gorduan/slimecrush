@@ -7,18 +7,23 @@ signal scroll_started
 
 # Camera settings
 const SCROLL_DURATION: float = 1.0
-const LEVEL_HEIGHT: float = 1280.0  # One screen height per level
+const LEVEL_HEIGHT: float = 1280.0  # One screen height
 
 # Camera center position (middle of viewport)
+# Viewport is 720x1280, center at 360x640
 const CAMERA_CENTER: Vector2 = Vector2(360, 640)
+
+# Zoom level - back to 1.0 (WorldMap will be scaled instead)
+const CAMERA_ZOOM: Vector2 = Vector2(1.0, 1.0)
 
 var current_level_offset: int = 0
 var is_scrolling: bool = false
 
 
 func _ready() -> void:
-	# Keep camera at center position - don't override scene position
-	pass
+	# Set zoom to show wider map
+	zoom = CAMERA_ZOOM
+	position = CAMERA_CENTER
 
 
 func _get_level_position(level_offset: int) -> Vector2:
@@ -59,6 +64,7 @@ func _on_scroll_complete() -> void:
 func reset_camera() -> void:
 	current_level_offset = 0
 	position = CAMERA_CENTER
+	zoom = CAMERA_ZOOM
 	is_scrolling = false
 
 

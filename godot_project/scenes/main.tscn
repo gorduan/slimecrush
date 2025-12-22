@@ -1,9 +1,10 @@
-[gd_scene load_steps=7 format=3 uid="uid://bx8mwn5j7d3vy"]
+[gd_scene load_steps=8 format=3 uid="uid://bx8mwn5j7d3vy"]
 
 [ext_resource type="Script" uid="uid://c5hq37klhvuwt" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" uid="uid://dkp8qx6h2t7gv" path="res://scenes/game_board.tscn" id="2_board"]
 [ext_resource type="PackedScene" uid="uid://daqkvnnq4iooa" path="res://scenes/world_map.tscn" id="3_world_map"]
 [ext_resource type="Script" path="res://scripts/game_camera.gd" id="4_camera"]
+[ext_resource type="PackedScene" uid="uid://cheat_menu_scene" path="res://scenes/cheat_menu.tscn" id="5_cheat"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 bg_color = Color(0, 0, 0, 0.8)
@@ -36,7 +37,8 @@ script = ExtResource("4_camera")
 
 [node name="WorldMap" parent="GameWorld" instance=ExtResource("3_world_map")]
 z_index = -10
-scale = Vector2(3, 3)
+position = Vector2(-24, 56)
+scale = Vector2(1.5, 1.5)
 
 [node name="GameBoard" parent="GameWorld" instance=ExtResource("2_board")]
 position = Vector2(72, 220)
@@ -328,15 +330,21 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 22
 text = "MISCHEN"
 
-[node name="WinButton" type="Button" parent="UILayer/BottomButtons"]
+[node name="CheatButton" type="Button" parent="UILayer/BottomButtons"]
 custom_minimum_size = Vector2(80, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-theme_override_colors/font_color = Color(0.15, 0.87, 0.51, 1)
-text = "WIN"
+theme_override_colors/font_color = Color(1, 0.84, 0.34, 1)
+text = "CHEAT"
+
+[node name="CheatMenu" parent="UILayer" instance=ExtResource("5_cheat")]
+visible = false
+z_index = 200
 
 [connection signal="pressed" from="UILayer/UI/LevelCompletePanel/VBoxContainer/NextButton" to="." method="_on_next_level_pressed"]
 [connection signal="pressed" from="UILayer/UI/GameOverPanel/VBoxContainer/RetryButton" to="." method="_on_new_game_pressed"]
 [connection signal="pressed" from="UILayer/BottomButtons/NewGameButton" to="." method="_on_new_game_pressed"]
 [connection signal="pressed" from="UILayer/BottomButtons/ShuffleButton" to="." method="_on_shuffle_pressed"]
-[connection signal="pressed" from="UILayer/BottomButtons/WinButton" to="." method="_on_win_cheat_pressed"]
+[connection signal="pressed" from="UILayer/BottomButtons/CheatButton" to="." method="_on_cheat_pressed"]
+[connection signal="closed" from="UILayer/CheatMenu" to="." method="_on_cheat_menu_closed"]
+[connection signal="spawn_mode_changed" from="UILayer/CheatMenu" to="." method="_on_spawn_mode_changed"]
