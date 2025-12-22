@@ -298,50 +298,71 @@ func animate_swap(target_pos: Vector2, duration: float = 0.2) -> void:
 
 
 # Animated swap with hop - slimes jump over each other in an arc
-func animate_swap_hop(target_pos: Vector2, hop_direction: int, duration: float = 0.25) -> void:
+# Uses squash & stretch for juicy animation
+func animate_swap_hop(target_pos: Vector2, hop_direction: int, duration: float = 0.3) -> void:
 	is_animating = true
 	_stop_breathing_animation()
 
 	var start_pos = position
 
-	# Calculate perpendicular offset for the arc
+	# Base scale for sprites
+	const BASE_SCALE = Vector2(1.6, 1.6)
+	# Squash & stretch scales (relative to base)
+	var stretch_scale = Vector2(1.3, 1.9) * 1.0  # Tall and thin in air (multiply by base later)
+	var squash_scale = Vector2(2.0, 1.2) * 1.0   # Wide and flat on land
+	var anticipation_scale = Vector2(1.8, 1.3) * 1.0  # Slight squash before jump
+
+	# Calculate arc - always hop upward for visual clarity
 	var delta = target_pos - start_pos
+	var hop_height = 50.0  # Pixels to hop up
 	var perpendicular: Vector2
 	if abs(delta.x) > abs(delta.y):
-		# Horizontal swap - hop up or down
-		perpendicular = Vector2(0, -40 * hop_direction)
+		# Horizontal swap - hop up
+		perpendicular = Vector2(0, -hop_height * abs(hop_direction))
 	else:
-		# Vertical swap - hop left or right
-		perpendicular = Vector2(-40 * hop_direction, 0)
+		# Vertical swap - hop sideways based on direction
+		perpendicular = Vector2(-hop_height * hop_direction * 0.5, -hop_height * 0.7)
 
 	var mid_point = (start_pos + target_pos) / 2.0 + perpendicular
 
-	# First half - jump up to mid point
-	var tween = create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(self, "position", mid_point, duration * 0.5)\
+	# Phase 1: Anticipation - quick squash before jumping
+	var tween0 = create_tween()
+	tween0.set_parallel(true)
+	tween0.tween_property(back_slime, "scale", anticipation_scale, duration * 0.15)\
 		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-	# Squash during jump
-	tween.tween_property(self, "scale", Vector2(1.15, 0.9), duration * 0.5)\
+	tween0.tween_property(front_slime, "scale", anticipation_scale, duration * 0.15)\
 		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	await tween0.finished
 
-	await tween.finished
+	# Phase 2: Jump up - stretch tall and thin
+	var tween1 = create_tween()
+	tween1.set_parallel(true)
+	tween1.tween_property(self, "position", mid_point, duration * 0.35)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween1.tween_property(back_slime, "scale", stretch_scale, duration * 0.25)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween1.tween_property(front_slime, "scale", stretch_scale, duration * 0.25)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	await tween1.finished
 
-	# Second half - land at target
+	# Phase 3: Fall down - start transitioning to squash
 	var tween2 = create_tween()
 	tween2.set_parallel(true)
-	tween2.tween_property(self, "position", target_pos, duration * 0.5)\
+	tween2.tween_property(self, "position", target_pos, duration * 0.35)\
 		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
-	tween2.tween_property(self, "scale", Vector2(1.1, 0.95), duration * 0.4)\
+	tween2.tween_property(back_slime, "scale", squash_scale, duration * 0.35)\
 		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
-
+	tween2.tween_property(front_slime, "scale", squash_scale, duration * 0.35)\
+		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 	await tween2.finished
 
-	# Bounce back to normal
+	# Phase 4: Bounce back to normal with overshoot
 	var tween3 = create_tween()
-	tween3.tween_property(self, "scale", Vector2.ONE, 0.1)\
-		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-
+	tween3.set_parallel(true)
+	tween3.tween_property(back_slime, "scale", BASE_SCALE, duration * 0.2)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
+	tween3.tween_property(front_slime, "scale", BASE_SCALE, duration * 0.2)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
 	await tween3.finished
 
 	is_animating = false

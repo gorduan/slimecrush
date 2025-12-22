@@ -29,7 +29,7 @@ const PROCESSING_TIMEOUT: float = 3.0  # Reset after 3 seconds
 var queued_swap: Dictionary = {}  # {"slime1": Slime, "slime2": Slime}
 
 # Animation timing
-const SWAP_DURATION: float = 0.25  # Duration for hop swap animation
+const SWAP_DURATION: float = 0.35  # Duration for hop swap animation with squash & stretch
 const FALL_DURATION: float = 0.3
 const MATCH_DELAY: float = 0.1
 const CASCADE_DELAY: float = 0.15
