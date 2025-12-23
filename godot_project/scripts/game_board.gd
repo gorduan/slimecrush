@@ -21,6 +21,9 @@ var cheat_spawn_mode: bool = false
 var cheat_spawn_color: GameManager.SlimeColor = GameManager.SlimeColor.RED
 var cheat_spawn_special: GameManager.SpecialType = GameManager.SpecialType.NONE
 
+# Saga mode state
+var saga_shuffle_count: int = 0  # For deterministic shuffling
+
 # Safety timeout for stuck processing
 var processing_start_time: float = 0.0
 const PROCESSING_TIMEOUT: float = 3.0  # Reset after 3 seconds
@@ -74,6 +77,12 @@ func _initialize_board() -> void:
 	# Get template for current level
 	board_template = Templates.get_template_for_level(GameManager.level)
 
+	# Set seed for saga mode (deterministic spawning)
+	if GameManager.is_saga_mode():
+		var level_seed = SaveManager.get_saga_seed()
+		seed(level_seed)
+		saga_shuffle_count = 0
+
 	board.clear()
 	board.resize(GameManager.BOARD_SIZE)
 
@@ -104,21 +113,41 @@ func _is_cell_playable(x: int, y: int) -> bool:
 
 
 func _get_non_matching_color(x: int, y: int) -> GameManager.SlimeColor:
-	var available_colors = GameManager.SlimeColor.values().duplicate()
+	# Get available colors based on mode
+	var available_colors: Array
+	if GameManager.is_saga_mode():
+		available_colors = GameManager.get_saga_available_colors(GameManager.level).duplicate()
+	else:
+		# Endless mode: all 6 base colors
+		available_colors = [
+			GameManager.SlimeColor.RED,
+			GameManager.SlimeColor.ORANGE,
+			GameManager.SlimeColor.YELLOW,
+			GameManager.SlimeColor.GREEN,
+			GameManager.SlimeColor.BLUE,
+			GameManager.SlimeColor.PURPLE
+		]
 
 	# Check horizontal matches (only if cells are playable)
+	# Use colors_match for saga mode (colorless matches base color)
 	if x >= 2 and _is_cell_playable(x-1, y) and _is_cell_playable(x-2, y):
 		if board[x-1][y] and board[x-2][y]:
-			if board[x-1][y].slime_color == board[x-2][y].slime_color:
-				available_colors.erase(board[x-1][y].slime_color)
+			if GameManager.colors_match(board[x-1][y].slime_color, board[x-2][y].slime_color):
+				# Remove all colors that match this base color
+				var base = GameManager.get_base_color(board[x-1][y].slime_color)
+				available_colors = available_colors.filter(func(c): return GameManager.get_base_color(c) != base)
 
 	# Check vertical matches (only if cells are playable)
 	if y >= 2 and _is_cell_playable(x, y-1) and _is_cell_playable(x, y-2):
 		if board[x][y-1] and board[x][y-2]:
-			if board[x][y-1].slime_color == board[x][y-2].slime_color:
-				available_colors.erase(board[x][y-1].slime_color)
+			if GameManager.colors_match(board[x][y-1].slime_color, board[x][y-2].slime_color):
+				var base = GameManager.get_base_color(board[x][y-1].slime_color)
+				available_colors = available_colors.filter(func(c): return GameManager.get_base_color(c) != base)
 
 	if available_colors.is_empty():
+		# Fallback
+		if GameManager.is_saga_mode():
+			return GameManager.get_saga_random_color(GameManager.level)
 		return GameManager.get_random_slime_color()
 
 	return available_colors[randi() % available_colors.size()]
@@ -213,6 +242,11 @@ func _try_swap(slime1: Slime, slime2: Slime) -> void:
 	slime1.animate_swap_hop(world_pos2, 1, SWAP_DURATION)
 	await slime2.animate_swap_hop(world_pos1, -1, SWAP_DURATION)
 
+	# Safety check: Verify slimes still exist after animation
+	if not is_instance_valid(slime1) or not is_instance_valid(slime2):
+		is_processing = false
+		return
+
 	# Check for matches or special combinations
 	var has_special_combo = _check_special_combination(slime1, slime2)
 	var matches = _find_all_matches()
@@ -231,11 +265,13 @@ func _try_swap(slime1: Slime, slime2: Slime) -> void:
 		GameManager.check_win_condition()
 	else:
 		# Invalid move - swap back with hop animation
-		# Swap data back first
-		_swap_slimes(slime1, slime2)
-		# Now animate back to their original positions
-		slime1.animate_swap_hop(world_pos1, -1, SWAP_DURATION)  # Hop back
-		await slime2.animate_swap_hop(world_pos2, 1, SWAP_DURATION)  # Hop back
+		# Safety check before swap back
+		if is_instance_valid(slime1) and is_instance_valid(slime2):
+			# Swap data back first
+			_swap_slimes(slime1, slime2)
+			# Now animate back to their original positions
+			slime1.animate_swap_hop(world_pos1, -1, SWAP_DURATION)  # Hop back
+			await slime2.animate_swap_hop(world_pos2, 1, SWAP_DURATION)  # Hop back
 
 	# Final board check before re-enabling input
 	_force_fill_empty_cells()
@@ -244,9 +280,8 @@ func _try_swap(slime1: Slime, slime2: Slime) -> void:
 	is_input_enabled = true
 	_set_board_darkened(false)  # Restore normal brightness
 
-	# Check for available moves
-	if not _has_valid_moves():
-		_shuffle_board()
+	# Check for available moves (handles saga mode shuffle limits)
+	await _check_no_moves_available()
 
 	# Process queued swap if any
 	if not queued_swap.is_empty():
@@ -316,16 +351,16 @@ func _get_horizontal_match(start_x: int, y: int) -> Array:
 	var color = slime.slime_color
 	var match_cells: Array = [Vector2i(start_x, y)]
 
-	# Check left
+	# Check left - use colors_match for saga mode compatibility
 	for x in range(start_x - 1, -1, -1):
-		if board[x][y] and board[x][y].slime_color == color:
+		if board[x][y] and GameManager.colors_match(board[x][y].slime_color, color):
 			match_cells.insert(0, Vector2i(x, y))
 		else:
 			break
 
 	# Check right
 	for x in range(start_x + 1, GameManager.BOARD_SIZE):
-		if board[x][y] and board[x][y].slime_color == color:
+		if board[x][y] and GameManager.colors_match(board[x][y].slime_color, color):
 			match_cells.append(Vector2i(x, y))
 		else:
 			break
@@ -341,16 +376,16 @@ func _get_vertical_match(x: int, start_y: int) -> Array:
 	var color = slime.slime_color
 	var match_cells: Array = [Vector2i(x, start_y)]
 
-	# Check up
+	# Check up - use colors_match for saga mode compatibility
 	for y in range(start_y - 1, -1, -1):
-		if board[x][y] and board[x][y].slime_color == color:
+		if board[x][y] and GameManager.colors_match(board[x][y].slime_color, color):
 			match_cells.insert(0, Vector2i(x, y))
 		else:
 			break
 
 	# Check down
 	for y in range(start_y + 1, GameManager.BOARD_SIZE):
-		if board[x][y] and board[x][y].slime_color == color:
+		if board[x][y] and GameManager.colors_match(board[x][y].slime_color, color):
 			match_cells.append(Vector2i(x, y))
 		else:
 			break
@@ -442,6 +477,10 @@ func _process_single_match(match_data: Dictionary) -> void:
 	# Calculate score
 	var score = GameManager.calculate_match_score(cells.size())
 	GameManager.add_score(score)
+
+	# Award currencies in Story Mode
+	if SaveManager.is_story_mode():
+		_award_story_currencies(color, cells.size())
 
 	# Determine special candy creation
 	var special_type = GameManager.SpecialType.NONE
@@ -931,7 +970,12 @@ func _fill_empty_spaces() -> void:
 			if not _is_cell_playable(x, y):
 				continue  # Skip non-playable cells
 			if board[x][y] == null:
-				var color = GameManager.get_random_slime_color()
+				# Use saga-appropriate colors or regular random
+				var color: GameManager.SlimeColor
+				if GameManager.is_saga_mode():
+					color = GameManager.get_saga_random_color(GameManager.level)
+				else:
+					color = GameManager.get_random_slime_color()
 				var slime = _create_slime(color, Vector2i(x, y))
 				board[x][y] = slime
 				# Start above board - higher for pieces that need to fall further
@@ -1044,6 +1088,77 @@ func _shuffle_board() -> void:
 	await get_tree().create_timer(0.4).timeout
 	if not _has_valid_moves():
 		_regenerate_board()
+
+
+# Saga mode shuffle - uses deterministic shuffling and tracks shuffle count
+func _shuffle_board_saga() -> bool:
+	"""
+	Attempts to shuffle the board in Saga mode.
+	Returns true if shuffle was allowed, false if no shuffles remaining.
+	"""
+	if not GameManager.use_saga_shuffle():
+		return false  # No shuffles remaining - level failed
+
+	saga_shuffle_count += 1
+
+	var slimes: Array = []
+	var playable_positions: Array[Vector2i] = []
+
+	# Collect all slimes and playable positions
+	for x in range(GameManager.BOARD_SIZE):
+		for y in range(GameManager.BOARD_SIZE):
+			if _is_cell_playable(x, y):
+				playable_positions.append(Vector2i(x, y))
+				if board[x][y]:
+					slimes.append(board[x][y])
+
+	# Deterministic shuffle using saga seed + shuffle count
+	var shuffle_seed = SaveManager.get_saga_seed() + saga_shuffle_count * 1000
+	seed(shuffle_seed)
+
+	# Fisher-Yates shuffle with deterministic random
+	for i in range(slimes.size() - 1, 0, -1):
+		var j = randi() % (i + 1)
+		var temp = slimes[i]
+		slimes[i] = slimes[j]
+		slimes[j] = temp
+
+	# Redistribute only to playable positions
+	var index = 0
+	for pos in playable_positions:
+		if index < slimes.size():
+			board[pos.x][pos.y] = slimes[index]
+			slimes[index].grid_position = pos
+			var target_pos = slimes[index].grid_to_world(pos)
+			slimes[index].animate_swap(target_pos, 0.3)
+			index += 1
+
+	await get_tree().create_timer(0.4).timeout
+	return true
+
+
+# Check for no moves and handle shuffle logic
+func _check_no_moves_available() -> void:
+	if _has_valid_moves():
+		return
+
+	if GameManager.is_saga_mode():
+		# Saga mode: Use limited shuffles
+		var shuffles_remaining = GameManager.get_saga_shuffles_remaining()
+		if shuffles_remaining > 0:
+			print("No moves! Shuffling... (%d shuffles remaining)" % shuffles_remaining)
+			await _shuffle_board_saga()
+			# Check again after shuffle
+			if not _has_valid_moves():
+				await _check_no_moves_available()
+		else:
+			# No shuffles left - level failed
+			print("No moves and no shuffles remaining - level failed!")
+			GameManager.saga_level_failed.emit()
+	else:
+		# Endless mode: Free shuffle
+		print("No moves! Shuffling board...")
+		await _shuffle_board()
 
 
 func _regenerate_board() -> void:
@@ -1289,3 +1404,38 @@ func _on_game_over() -> void:
 
 func _on_level_complete() -> void:
 	is_input_enabled = false
+
+
+# ============ STORY MODE CURRENCY FUNCTIONS ============
+
+func _award_story_currencies(color: GameManager.SlimeColor, match_size: int) -> void:
+	# Award Slime Essence based on color value and match size
+	var cascade_level = ProgressionManager.get_current_cascade()
+	var essence = ProgressionManager.calculate_essence_earned(color, match_size, cascade_level)
+	ProgressionManager.add_currency("slime_essence", essence)
+
+	# Color Crystal chance for Match-4+
+	if match_size >= 4:
+		var crystal_chance = 0.10  # 10% base chance
+		if randf() < crystal_chance:
+			var color_name = _get_color_name(color)
+			if color_name != "":
+				ProgressionManager.add_color_crystal(color_name)
+
+
+func _get_color_name(color: GameManager.SlimeColor) -> String:
+	# Convert SlimeColor enum to string for color crystals
+	match color:
+		GameManager.SlimeColor.RED, GameManager.SlimeColor.RED_COLORLESS:
+			return "red"
+		GameManager.SlimeColor.ORANGE, GameManager.SlimeColor.ORANGE_COLORLESS:
+			return "orange"
+		GameManager.SlimeColor.YELLOW, GameManager.SlimeColor.YELLOW_COLORLESS:
+			return "yellow"
+		GameManager.SlimeColor.GREEN, GameManager.SlimeColor.GREEN_COLORLESS:
+			return "green"
+		GameManager.SlimeColor.BLUE, GameManager.SlimeColor.BLUE_COLORLESS:
+			return "blue"
+		GameManager.SlimeColor.PURPLE, GameManager.SlimeColor.PURPLE_COLORLESS:
+			return "purple"
+	return ""

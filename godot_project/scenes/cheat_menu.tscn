@@ -1,0 +1,233 @@
+[gd_scene load_steps=3 format=3 uid="uid://cheat_menu_scene"]
+
+[ext_resource type="Script" path="res://scripts/cheat_menu.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.1, 0.1, 0.15, 0.95)
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+
+[node name="CheatMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -400.0
+offset_right = 300.0
+offset_bottom = 400.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.84, 0.34, 1)
+theme_override_font_sizes/font_size = 32
+text = "CHEAT MENU"
+horizontal_alignment = 1
+
+[node name="Separator1" type="HSeparator" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="GameCheats" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 18
+text = "Game Cheats"
+
+[node name="GameButtons" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="WinButton" type="Button" parent="Panel/VBox/GameButtons"]
+custom_minimum_size = Vector2(130, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "WIN"
+
+[node name="AddScoreButton" type="Button" parent="Panel/VBox/GameButtons"]
+custom_minimum_size = Vector2(130, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "+1000"
+
+[node name="AddMovesButton" type="Button" parent="Panel/VBox/GameButtons"]
+custom_minimum_size = Vector2(130, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "+10 Moves"
+
+[node name="ShuffleButton" type="Button" parent="Panel/VBox/GameButtons"]
+custom_minimum_size = Vector2(100, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Shuffle"
+
+[node name="GridButton" type="Button" parent="Panel/VBox/GameButtons"]
+custom_minimum_size = Vector2(100, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "GRID"
+
+[node name="Separator2" type="HSeparator" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="SlimeSpawnLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 18
+text = "Spawn Slime (tap cell after selecting)"
+
+[node name="ColorButtons" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="RedBtn" type="Button" parent="Panel/VBox/ColorButtons"]
+custom_minimum_size = Vector2(75, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "RED"
+
+[node name="OrangeBtn" type="Button" parent="Panel/VBox/ColorButtons"]
+custom_minimum_size = Vector2(75, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "ORANGE"
+
+[node name="YellowBtn" type="Button" parent="Panel/VBox/ColorButtons"]
+custom_minimum_size = Vector2(75, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "YELLOW"
+
+[node name="GreenBtn" type="Button" parent="Panel/VBox/ColorButtons"]
+custom_minimum_size = Vector2(75, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "GREEN"
+
+[node name="BlueBtn" type="Button" parent="Panel/VBox/ColorButtons"]
+custom_minimum_size = Vector2(75, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "BLUE"
+
+[node name="PurpleBtn" type="Button" parent="Panel/VBox/ColorButtons"]
+custom_minimum_size = Vector2(75, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "PURPLE"
+
+[node name="SpecialLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 18
+text = "Special Type"
+
+[node name="SpecialButtons" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="NoneBtn" type="Button" parent="Panel/VBox/SpecialButtons"]
+custom_minimum_size = Vector2(100, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "NORMAL"
+
+[node name="StripedHBtn" type="Button" parent="Panel/VBox/SpecialButtons"]
+custom_minimum_size = Vector2(100, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "STRIPED H"
+
+[node name="StripedVBtn" type="Button" parent="Panel/VBox/SpecialButtons"]
+custom_minimum_size = Vector2(100, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "STRIPED V"
+
+[node name="WrappedBtn" type="Button" parent="Panel/VBox/SpecialButtons"]
+custom_minimum_size = Vector2(100, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "WRAPPED"
+
+[node name="ColorBombBtn" type="Button" parent="Panel/VBox/SpecialButtons"]
+custom_minimum_size = Vector2(100, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "COLOR BOMB"
+
+[node name="Separator3" type="HSeparator" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="SelectionInfo" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.27, 0.67, 0.95, 1)
+theme_override_font_sizes/font_size = 20
+text = "Selected: RED - NORMAL"
+horizontal_alignment = 1
+
+[node name="ModeLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.15, 0.87, 0.51, 1)
+theme_override_font_sizes/font_size = 16
+text = "Tap a cell on the board to replace slime"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="Panel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CloseButton" type="Button" parent="Panel/VBox"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "CLOSE"
+
+[connection signal="pressed" from="Panel/VBox/GameButtons/WinButton" to="." method="_on_win_pressed"]
+[connection signal="pressed" from="Panel/VBox/GameButtons/AddScoreButton" to="." method="_on_add_score_pressed"]
+[connection signal="pressed" from="Panel/VBox/GameButtons/AddMovesButton" to="." method="_on_add_moves_pressed"]
+[connection signal="pressed" from="Panel/VBox/GameButtons/ShuffleButton" to="." method="_on_shuffle_pressed"]
+[connection signal="pressed" from="Panel/VBox/GameButtons/GridButton" to="." method="_on_grid_pressed"]
+[connection signal="pressed" from="Panel/VBox/ColorButtons/RedBtn" to="." method="_on_color_selected" binds= [0]]
+[connection signal="pressed" from="Panel/VBox/ColorButtons/OrangeBtn" to="." method="_on_color_selected" binds= [1]]
+[connection signal="pressed" from="Panel/VBox/ColorButtons/YellowBtn" to="." method="_on_color_selected" binds= [2]]
+[connection signal="pressed" from="Panel/VBox/ColorButtons/GreenBtn" to="." method="_on_color_selected" binds= [3]]
+[connection signal="pressed" from="Panel/VBox/ColorButtons/BlueBtn" to="." method="_on_color_selected" binds= [4]]
+[connection signal="pressed" from="Panel/VBox/ColorButtons/PurpleBtn" to="." method="_on_color_selected" binds= [5]]
+[connection signal="pressed" from="Panel/VBox/SpecialButtons/NoneBtn" to="." method="_on_special_selected" binds= [0]]
+[connection signal="pressed" from="Panel/VBox/SpecialButtons/StripedHBtn" to="." method="_on_special_selected" binds= [1]]
+[connection signal="pressed" from="Panel/VBox/SpecialButtons/StripedVBtn" to="." method="_on_special_selected" binds= [2]]
+[connection signal="pressed" from="Panel/VBox/SpecialButtons/WrappedBtn" to="." method="_on_special_selected" binds= [3]]
+[connection signal="pressed" from="Panel/VBox/SpecialButtons/ColorBombBtn" to="." method="_on_special_selected" binds= [4]]
+[connection signal="pressed" from="Panel/VBox/CloseButton" to="." method="_on_close_pressed"]

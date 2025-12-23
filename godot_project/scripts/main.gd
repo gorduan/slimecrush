@@ -5,27 +5,46 @@ extends Control
 @onready var game_board: GameBoard = $GameWorld/GameBoard
 @onready var world_map: WorldMap = $GameWorld/WorldMap
 @onready var game_camera: Camera2D = $GameWorld/GameCamera
-@onready var score_label: Label = $UILayer/UI/TopBar/StatsRow/ScoreContainer/ScoreValue
-@onready var moves_label: Label = $UILayer/UI/TopBar/StatsRow/MovesContainer/MovesValue
-@onready var level_label: Label = $UILayer/UI/TopBar/StatsRow/LevelContainer/LevelValue
-@onready var highscore_label: Label = $UILayer/UI/TopBar/SecondRow/HighscoreContainer/HighscoreValue
-@onready var target_label: Label = $UILayer/UI/TopBar/SecondRow/TargetContainer/TargetValue
+@onready var score_label: Label = $UILayer/UI/TopBar/StatsRow/ScoreContainer/HBox/ScoreValue
+@onready var moves_label: Label = $UILayer/UI/TopBar/StatsRow/MovesContainer/HBox/MovesValue
+@onready var level_label: Label = $UILayer/UI/TopBar/StatsRow/LevelContainer/HBox/LevelValue
+@onready var highscore_label: Label = $UILayer/UI/SecondRow/HighscoreContainer/HBox/HighscoreValue
+@onready var target_label: Label = $UILayer/UI/SecondRow/TargetContainer/HBox/TargetValue
 @onready var combo_label: Label = $UILayer/UI/ComboDisplay
 @onready var level_complete_panel: Panel = $UILayer/UI/LevelCompletePanel
 @onready var game_over_panel: Panel = $UILayer/UI/GameOverPanel
 @onready var final_score_label: Label = $UILayer/UI/LevelCompletePanel/VBoxContainer/FinalScore
 @onready var gameover_score_label: Label = $UILayer/UI/GameOverPanel/VBoxContainer/FinalScore
 @onready var menu_button: Button = $UILayer/UI/TopBar/MenuButton
+@onready var cheat_menu: Control = $UILayer/CheatMenu
 
-# GameBoard base position (relative to screen)
+# Story mode currency display
+@onready var currency_bar: HBoxContainer = $UILayer/UI/TopBar/CurrencyBar if has_node("UILayer/UI/TopBar/CurrencyBar") else null
+@onready var essence_display: Label = null
+@onready var upgrades_button: Button = null
+
+# Progression menu
+var progression_menu_scene: PackedScene = preload("res://scenes/story_mode/progression_menu.tscn")
+
+# Cheat menu spawn mode state
+var cheat_spawn_active: bool = false
+var cheat_spawn_color: GameManager.SlimeColor = GameManager.SlimeColor.RED
+var cheat_spawn_special: GameManager.SpecialType = GameManager.SpecialType.NONE
+
+# GameBoard base position (centered on screen)
+# Viewport is 720 wide, GameBoard is 8 tiles * 72px = 576px
+# Center: (720 - 576) / 2 = 72
 const GAME_BOARD_BASE_X: float = 72.0
-const GAME_BOARD_BASE_Y: float = 220.0
-const LEVEL_HEIGHT: float = 1280.0
+const GAME_BOARD_BASE_Y: float = 350.0  # Vertical position for gameplay
+const LEVEL_HEIGHT: float = 1280.0  # One screen height
 
 
 func _ready() -> void:
-	# Load game from selected slot
-	GameManager.load_from_slot()
+	# Load game from selected slot (saga or regular mode)
+	if GameManager.is_saga_mode():
+		GameManager.load_saga_level()
+	else:
+		GameManager.load_from_slot()
 
 	_connect_signals()
 	_update_ui()
@@ -36,6 +55,16 @@ func _ready() -> void:
 	# Connect menu button
 	if menu_button:
 		menu_button.pressed.connect(_on_menu_pressed)
+
+	# Setup cheat menu
+	if cheat_menu:
+		cheat_menu.game_board = game_board
+		cheat_menu.world_map = world_map
+		cheat_menu.visible = false
+
+	# Setup Story Mode UI
+	if SaveManager.is_story_mode():
+		_setup_story_mode_ui()
 
 
 func _generate_world() -> void:
@@ -54,6 +83,8 @@ func _connect_signals() -> void:
 	GameManager.game_over.connect(_on_game_over)
 	GameManager.level_complete.connect(_on_level_complete)
 	GameManager.highscore_achieved.connect(_on_highscore_achieved)
+	GameManager.saga_level_failed.connect(_on_saga_level_failed)
+	GameManager.saga_shuffle_used.connect(_on_saga_shuffle_used)
 
 
 func _hide_panels() -> void:
@@ -133,7 +164,12 @@ func _on_level_complete() -> void:
 	final_score_label.text = str(GameManager.score)
 	level_complete_panel.visible = true
 	level_complete_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	SaveManager.unlock_level(GameManager.level + 1)
+
+	# Handle saga mode completion
+	if GameManager.is_saga_mode():
+		GameManager.complete_saga_level()
+	else:
+		SaveManager.unlock_level(GameManager.level + 1)
 
 	# Disable game board input
 	if game_board:
@@ -161,13 +197,36 @@ func _on_new_game_pressed() -> void:
 	AudioManager.play_sfx("button")
 	game_over_panel.visible = false
 	level_complete_panel.visible = false
-	GameManager.reset_game()
+
+	# In saga mode, retry the same level with same seed
+	if GameManager.is_saga_mode():
+		GameManager.retry_saga_level()
+	else:
+		GameManager.reset_game()
+
 	get_tree().reload_current_scene()
 
 
 func _on_next_level_pressed() -> void:
 	AudioManager.play_sfx("button")
 	level_complete_panel.visible = false
+
+	# Handle saga mode differently
+	if GameManager.is_saga_mode():
+		# Load next saga level (already advanced in complete_saga_level)
+		GameManager.load_saga_level()
+
+		var new_stage = GameManager.get_current_stage()
+		game_camera.reset_camera()
+		_generate_world()
+		game_board.position = Vector2(GAME_BOARD_BASE_X, GAME_BOARD_BASE_Y)
+
+		if game_board:
+			game_board.is_input_enabled = true
+			game_board._reset_board()
+
+		_update_ui()
+		return
 
 	var old_stage = GameManager.get_current_stage()
 	GameManager.next_level()
@@ -206,12 +265,31 @@ func _on_shuffle_pressed() -> void:
 		game_board._shuffle_board()
 
 
-func _on_win_cheat_pressed() -> void:
-	# Cheat button - instantly win the level
+func _on_cheat_pressed() -> void:
 	AudioManager.play_sfx("button")
-	# Set score to target + extra to trigger win
-	GameManager.score = GameManager.target_score + 100
-	GameManager.check_win_condition()
+	if cheat_menu:
+		cheat_menu.visible = true
+		cheat_spawn_active = true
+		if game_board:
+			game_board.cheat_spawn_mode = true
+
+
+func _on_cheat_menu_closed() -> void:
+	if cheat_menu:
+		cheat_menu.visible = false
+	cheat_spawn_active = false
+	if game_board:
+		game_board.cheat_spawn_mode = false
+
+
+func _on_spawn_mode_changed(active: bool, color: GameManager.SlimeColor, special: GameManager.SpecialType) -> void:
+	cheat_spawn_active = active
+	cheat_spawn_color = color
+	cheat_spawn_special = special
+	if game_board:
+		game_board.cheat_spawn_mode = active
+		game_board.cheat_spawn_color = color
+		game_board.cheat_spawn_special = special
 
 
 func _on_menu_pressed() -> void:
@@ -226,3 +304,120 @@ func _on_menu_pressed() -> void:
 	await tween.finished
 
 	get_tree().change_scene_to_file("res://scenes/mode_selection.tscn")
+
+
+func _on_saga_level_failed() -> void:
+	# Show game over panel with "Level Failed" message
+	gameover_score_label.text = "Level %d gescheitert!\nKeine Shuffles mehr." % GameManager.level
+	game_over_panel.visible = true
+	game_over_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	if game_board:
+		game_board.is_input_enabled = false
+
+	var tween = create_tween()
+	game_over_panel.modulate.a = 0.0
+	tween.tween_property(game_over_panel, "modulate:a", 1.0, 0.3)
+
+	AudioManager.play_sfx("lose")
+
+
+func _on_saga_shuffle_used(remaining: int) -> void:
+	# Show shuffle notification
+	combo_label.text = "SHUFFLE! (%d übrig)" % remaining
+	combo_label.visible = true
+
+	var tween = create_tween()
+	tween.tween_property(combo_label, "scale", Vector2.ZERO, 0.0)
+	tween.tween_property(combo_label, "scale", Vector2(1.3, 1.3), 0.2)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.tween_property(combo_label, "scale", Vector2.ONE, 0.1)
+	tween.tween_property(combo_label, "modulate:a", 0.0, 0.5).set_delay(1.0)
+	tween.tween_callback(func(): combo_label.visible = false; combo_label.modulate.a = 1.0)
+
+	AudioManager.play_sfx("combo")
+
+
+# ============ STORY MODE FUNCTIONS ============
+
+func _setup_story_mode_ui() -> void:
+	# Create essence display in the top bar
+	var top_bar = $UILayer/UI/TopBar
+
+	# Create currency row
+	var currency_row = HBoxContainer.new()
+	currency_row.name = "CurrencyRow"
+	currency_row.add_theme_constant_override("separation", 15)
+	currency_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	top_bar.add_child(currency_row)
+	top_bar.move_child(currency_row, 2)  # After title
+
+	# Essence display
+	var essence_container = _create_currency_display("◆", ProgressionManager.currencies.slime_essence, Color(0.27, 0.87, 0.51))
+	currency_row.add_child(essence_container)
+	essence_display = essence_container.get_node("Value")
+
+	# Upgrades button
+	upgrades_button = Button.new()
+	upgrades_button.text = "UPGRADES"
+	upgrades_button.custom_minimum_size = Vector2(120, 40)
+	upgrades_button.add_theme_font_size_override("font_size", 16)
+	upgrades_button.add_theme_color_override("font_color", Color(1, 0.84, 0.34))
+	upgrades_button.pressed.connect(_on_upgrades_pressed)
+	currency_row.add_child(upgrades_button)
+
+	# Connect to currency changes
+	ProgressionManager.currency_changed.connect(_on_story_currency_changed)
+
+
+func _create_currency_display(icon: String, value: int, color: Color) -> HBoxContainer:
+	var container = HBoxContainer.new()
+	container.add_theme_constant_override("separation", 5)
+
+	var icon_label = Label.new()
+	icon_label.text = icon
+	icon_label.add_theme_font_size_override("font_size", 20)
+	icon_label.add_theme_color_override("font_color", color)
+	container.add_child(icon_label)
+
+	var value_label = Label.new()
+	value_label.name = "Value"
+	value_label.text = str(value)
+	value_label.add_theme_font_size_override("font_size", 20)
+	value_label.add_theme_color_override("font_color", color)
+	container.add_child(value_label)
+
+	return container
+
+
+func _on_story_currency_changed(currency: String, new_amount: int) -> void:
+	if currency == "slime_essence" and essence_display:
+		essence_display.text = str(new_amount)
+		# Animate
+		var tween = create_tween()
+		tween.tween_property(essence_display, "scale", Vector2(1.3, 1.3), 0.1)
+		tween.tween_property(essence_display, "scale", Vector2.ONE, 0.1)
+
+
+func _on_upgrades_pressed() -> void:
+	AudioManager.play_sfx("button")
+
+	# Disable game board input while menu is open
+	if game_board:
+		game_board.is_input_enabled = false
+
+	# Instance and show progression menu
+	var menu = progression_menu_scene.instantiate()
+	menu.closed.connect(_on_progression_menu_closed)
+	$UILayer.add_child(menu)
+
+	# Fade in
+	menu.modulate.a = 0.0
+	var tween = create_tween()
+	tween.tween_property(menu, "modulate:a", 1.0, 0.3)
+
+
+func _on_progression_menu_closed() -> void:
+	# Re-enable game board input
+	if game_board:
+		game_board.is_input_enabled = true

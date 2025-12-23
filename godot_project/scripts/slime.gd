@@ -67,15 +67,18 @@ func _ready() -> void:
 func _update_visual() -> void:
 	# Apply color tint via shader parameter to both layers
 	var tint_color = _get_color_tint(slime_color)
-	_set_shader_color(tint_color)
+	var outline_color = _get_outline_color(slime_color)
+	_set_shader_color(tint_color, outline_color)
 
 
-func _set_shader_color(tint_color: Color) -> void:
+func _set_shader_color(tint_color: Color, outline_color: Color = Color(0, 0, 0, 0)) -> void:
 	# Set color via shader parameter for gel effect on both layers
 	if back_slime and back_slime.material:
 		back_slime.material.set_shader_parameter("color_tint", tint_color)
+		back_slime.material.set_shader_parameter("outline_color", outline_color)
 	if front_slime and front_slime.material:
 		front_slime.material.set_shader_parameter("color_tint", tint_color)
+		front_slime.material.set_shader_parameter("outline_color", outline_color)
 
 
 func _get_color_tint(color: GameManager.SlimeColor) -> Color:
@@ -93,8 +96,41 @@ func _get_color_tint(color: GameManager.SlimeColor) -> Color:
 			return Color(1.0, 1.0, 1.0)  # Keep original blue
 		GameManager.SlimeColor.PURPLE:
 			return Color(1.4, 0.5, 1.5)
+		# Colorless variants - grayscale with slight tint hints
+		GameManager.SlimeColor.RED_COLORLESS:
+			return Color(0.9, 0.7, 0.7)  # Grayish with red hint
+		GameManager.SlimeColor.ORANGE_COLORLESS:
+			return Color(0.9, 0.8, 0.7)  # Grayish with orange hint
+		GameManager.SlimeColor.YELLOW_COLORLESS:
+			return Color(0.9, 0.9, 0.7)  # Grayish with yellow hint
+		GameManager.SlimeColor.GREEN_COLORLESS:
+			return Color(0.7, 0.85, 0.7)  # Grayish with green hint
+		GameManager.SlimeColor.BLUE_COLORLESS:
+			return Color(0.7, 0.7, 0.85)  # Grayish with blue hint
+		GameManager.SlimeColor.PURPLE_COLORLESS:
+			return Color(0.8, 0.7, 0.85)  # Grayish with purple hint
 		_:
 			return Color.WHITE
+
+
+func _get_outline_color(color: GameManager.SlimeColor) -> Color:
+	# Return outline color for colorless variants (their base color)
+	# Alpha 0 means no outline for regular colored slimes
+	match color:
+		GameManager.SlimeColor.RED_COLORLESS:
+			return Color(1.0, 0.4, 0.4, 1.0)  # Red outline
+		GameManager.SlimeColor.ORANGE_COLORLESS:
+			return Color(1.0, 0.65, 0.2, 1.0)  # Orange outline
+		GameManager.SlimeColor.YELLOW_COLORLESS:
+			return Color(1.0, 0.9, 0.3, 1.0)  # Yellow outline
+		GameManager.SlimeColor.GREEN_COLORLESS:
+			return Color(0.2, 0.85, 0.35, 1.0)  # Green outline
+		GameManager.SlimeColor.BLUE_COLORLESS:
+			return Color(0.3, 0.5, 1.0, 1.0)  # Blue outline
+		GameManager.SlimeColor.PURPLE_COLORLESS:
+			return Color(0.7, 0.3, 0.9, 1.0)  # Purple outline
+		_:
+			return Color(0, 0, 0, 0)  # No outline for regular colors
 
 
 func _update_special_visual() -> void:
@@ -127,11 +163,12 @@ func _get_item_scene(type: GameManager.SpecialType) -> PackedScene:
 
 func _update_selection_visual() -> void:
 	var base_color = _get_color_tint(slime_color)
+	var outline_color = _get_outline_color(slime_color)
 	if is_selected:
 		var bright_color = Color(base_color.r * 1.3, base_color.g * 1.3, base_color.b * 1.3)
-		_set_shader_color(bright_color)
+		_set_shader_color(bright_color, outline_color)
 	else:
-		_set_shader_color(base_color)
+		_set_shader_color(base_color, outline_color)
 
 
 func setup(color: GameManager.SlimeColor, pos: Vector2i, special: GameManager.SpecialType = GameManager.SpecialType.NONE) -> void:

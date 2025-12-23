@@ -21,6 +21,7 @@ config/icon="res://icon.svg"
 GameManager="*res://autoload/game_manager.gd"
 SaveManager="*res://autoload/save_manager.gd"
 AudioManager="*res://autoload/audio_manager.gd"
+ProgressionManager="*res://autoload/progression_manager.gd"
 
 [display]
 
@@ -47,7 +48,7 @@ pointing/emulate_touch_from_mouse=true
 
 [rendering]
 
-renderer/rendering_method="mobile"
 textures/canvas_textures/default_texture_filter=0
+renderer/rendering_method="mobile"
 textures/vram_compression/import_etc2_astc=true
 environment/defaults/default_clear_color=Color(0.1, 0.1, 0.15, 1)

@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://bx8mwn5j7d3vy"]
+[gd_scene load_steps=12 format=3 uid="uid://bx8mwn5j7d3vy"]
 
 [ext_resource type="Script" uid="uid://c5hq37klhvuwt" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" uid="uid://dkp8qx6h2t7gv" path="res://scenes/game_board.tscn" id="2_board"]
@@ -7,18 +7,66 @@
 [ext_resource type="PackedScene" uid="uid://cheat_menu_scene" path="res://scenes/cheat_menu.tscn" id="5_cheat"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-bg_color = Color(0, 0, 0, 0.8)
-corner_radius_top_left = 20
-corner_radius_top_right = 20
-corner_radius_bottom_right = 20
-corner_radius_bottom_left = 20
+bg_color = Color(0.08, 0.08, 0.12, 0.95)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+content_margin_left = 20.0
+content_margin_top = 20.0
+content_margin_right = 20.0
+content_margin_bottom = 20.0
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button"]
-bg_color = Color(1, 0.42, 0.42, 1)
-corner_radius_top_left = 25
-corner_radius_top_right = 25
-corner_radius_bottom_right = 25
-corner_radius_bottom_left = 25
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_primary"]
+bg_color = Color(0.15, 0.87, 0.51, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 16.0
+content_margin_top = 8.0
+content_margin_right = 16.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_secondary"]
+bg_color = Color(0.25, 0.25, 0.3, 0.9)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 16.0
+content_margin_top = 8.0
+content_margin_right = 16.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_danger"]
+bg_color = Color(0.9, 0.3, 0.3, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 16.0
+content_margin_top = 8.0
+content_margin_right = 16.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_badge"]
+bg_color = Color(0.15, 0.15, 0.2, 0.85)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 6.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_menu_button"]
+bg_color = Color(0.2, 0.2, 0.25, 0.9)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -64,127 +112,145 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="TopBar" type="VBoxContainer" parent="UILayer/UI"]
+[node name="TopBar" type="HBoxContainer" parent="UILayer/UI"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 200.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = 60.0
 grow_horizontal = 2
-theme_override_constants/separation = 10
-
-[node name="TitleRow" type="HBoxContainer" parent="UILayer/UI/TopBar"]
-layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
+alignment = 0
 
 [node name="MenuButton" type="Button" parent="UILayer/UI/TopBar"]
-custom_minimum_size = Vector2(50, 40)
+custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 size_flags_horizontal = 0
-theme_override_font_sizes/font_size = 24
-text = "☰"
-
-[node name="Title" type="Label" parent="UILayer/UI/TopBar"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 0.84, 0.34, 1)
-theme_override_font_sizes/font_size = 48
-text = "SLIMECRUSH"
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_menu_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_menu_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_menu_button")
+text = "="
 
 [node name="StatsRow" type="HBoxContainer" parent="UILayer/UI/TopBar"]
 layout_mode = 2
-theme_override_constants/separation = 20
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
 alignment = 1
 
-[node name="ScoreContainer" type="VBoxContainer" parent="UILayer/UI/TopBar/StatsRow"]
+[node name="ScoreContainer" type="PanelContainer" parent="UILayer/UI/TopBar/StatsRow"]
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
 
-[node name="ScoreLabel" type="Label" parent="UILayer/UI/TopBar/StatsRow/ScoreContainer"]
+[node name="HBox" type="HBoxContainer" parent="UILayer/UI/TopBar/StatsRow/ScoreContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-theme_override_font_sizes/font_size = 18
-text = "PUNKTE"
-horizontal_alignment = 1
+theme_override_constants/separation = 6
 
-[node name="ScoreValue" type="Label" parent="UILayer/UI/TopBar/StatsRow/ScoreContainer"]
+[node name="Icon" type="Label" parent="UILayer/UI/TopBar/StatsRow/ScoreContainer/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.84, 0.34, 1)
+theme_override_font_sizes/font_size = 16
+text = "★"
+
+[node name="ScoreValue" type="Label" parent="UILayer/UI/TopBar/StatsRow/ScoreContainer/HBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 36
+theme_override_font_sizes/font_size = 18
 text = "0"
-horizontal_alignment = 1
 
-[node name="LevelContainer" type="VBoxContainer" parent="UILayer/UI/TopBar/StatsRow"]
+[node name="LevelContainer" type="PanelContainer" parent="UILayer/UI/TopBar/StatsRow"]
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
 
-[node name="LevelLabel" type="Label" parent="UILayer/UI/TopBar/StatsRow/LevelContainer"]
+[node name="HBox" type="HBoxContainer" parent="UILayer/UI/TopBar/StatsRow/LevelContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-theme_override_font_sizes/font_size = 18
-text = "LEVEL"
-horizontal_alignment = 1
+theme_override_constants/separation = 6
 
-[node name="LevelValue" type="Label" parent="UILayer/UI/TopBar/StatsRow/LevelContainer"]
+[node name="Icon" type="Label" parent="UILayer/UI/TopBar/StatsRow/LevelContainer/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.27, 0.67, 0.95, 1)
+theme_override_font_sizes/font_size = 16
+text = "Lv"
+
+[node name="LevelValue" type="Label" parent="UILayer/UI/TopBar/StatsRow/LevelContainer/HBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 36
+theme_override_font_sizes/font_size = 18
 text = "1"
-horizontal_alignment = 1
 
-[node name="MovesContainer" type="VBoxContainer" parent="UILayer/UI/TopBar/StatsRow"]
+[node name="MovesContainer" type="PanelContainer" parent="UILayer/UI/TopBar/StatsRow"]
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
 
-[node name="MovesLabel" type="Label" parent="UILayer/UI/TopBar/StatsRow/MovesContainer"]
+[node name="HBox" type="HBoxContainer" parent="UILayer/UI/TopBar/StatsRow/MovesContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-theme_override_font_sizes/font_size = 18
-text = "ZÜGE"
-horizontal_alignment = 1
+theme_override_constants/separation = 6
 
-[node name="MovesValue" type="Label" parent="UILayer/UI/TopBar/StatsRow/MovesContainer"]
+[node name="Icon" type="Label" parent="UILayer/UI/TopBar/StatsRow/MovesContainer/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.15, 0.87, 0.51, 1)
+theme_override_font_sizes/font_size = 16
+text = "▶"
+
+[node name="MovesValue" type="Label" parent="UILayer/UI/TopBar/StatsRow/MovesContainer/HBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 36
+theme_override_font_sizes/font_size = 18
 text = "30"
-horizontal_alignment = 1
 
-[node name="SecondRow" type="HBoxContainer" parent="UILayer/UI/TopBar"]
-layout_mode = 2
-theme_override_constants/separation = 60
+[node name="SecondRow" type="HBoxContainer" parent="UILayer/UI"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 12.0
+offset_top = 64.0
+offset_right = -12.0
+offset_bottom = 100.0
+grow_horizontal = 2
+theme_override_constants/separation = 8
 alignment = 1
 
-[node name="HighscoreContainer" type="VBoxContainer" parent="UILayer/UI/TopBar/SecondRow"]
+[node name="HighscoreContainer" type="PanelContainer" parent="UILayer/UI/SecondRow"]
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
 
-[node name="HighscoreLabel" type="Label" parent="UILayer/UI/TopBar/SecondRow/HighscoreContainer"]
+[node name="HBox" type="HBoxContainer" parent="UILayer/UI/SecondRow/HighscoreContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.84, 0.34, 1)
+theme_override_constants/separation = 6
+
+[node name="Icon" type="Label" parent="UILayer/UI/SecondRow/HighscoreContainer/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.65, 0.2, 1)
+theme_override_font_sizes/font_size = 14
+text = "Best"
+
+[node name="HighscoreValue" type="Label" parent="UILayer/UI/SecondRow/HighscoreContainer/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.65, 0.2, 1)
 theme_override_font_sizes/font_size = 16
-text = "HIGHSCORE"
-horizontal_alignment = 1
-
-[node name="HighscoreValue" type="Label" parent="UILayer/UI/TopBar/SecondRow/HighscoreContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.84, 0.34, 1)
-theme_override_font_sizes/font_size = 28
 text = "0"
-horizontal_alignment = 1
 
-[node name="TargetContainer" type="VBoxContainer" parent="UILayer/UI/TopBar/SecondRow"]
+[node name="TargetContainer" type="PanelContainer" parent="UILayer/UI/SecondRow"]
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
 
-[node name="TargetLabel" type="Label" parent="UILayer/UI/TopBar/SecondRow/TargetContainer"]
+[node name="HBox" type="HBoxContainer" parent="UILayer/UI/SecondRow/TargetContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Icon" type="Label" parent="UILayer/UI/SecondRow/TargetContainer/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.27, 0.67, 0.95, 1)
+theme_override_font_sizes/font_size = 14
+text = "Ziel"
+
+[node name="TargetValue" type="Label" parent="UILayer/UI/SecondRow/TargetContainer/HBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.27, 0.67, 0.95, 1)
 theme_override_font_sizes/font_size = 16
-text = "ZIEL"
-horizontal_alignment = 1
-
-[node name="TargetValue" type="Label" parent="UILayer/UI/TopBar/SecondRow/TargetContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.27, 0.67, 0.95, 1)
-theme_override_font_sizes/font_size = 28
 text = "1000"
-horizontal_alignment = 1
 
 [node name="ComboDisplay" type="Label" parent="UILayer/UI"]
 layout_mode = 1
@@ -201,8 +267,8 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_colors/font_color = Color(1, 0.84, 0.34, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 6
-theme_override_font_sizes/font_size = 52
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 42
 text = "3x COMBO!"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -216,10 +282,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -180.0
-offset_top = -150.0
-offset_right = 180.0
-offset_bottom = 150.0
+offset_left = -160.0
+offset_top = -140.0
+offset_right = 160.0
+offset_bottom = 140.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
@@ -231,27 +297,32 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 16
 alignment = 1
 
 [node name="Title" type="Label" parent="UILayer/UI/LevelCompletePanel/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.15, 0.87, 0.51, 1)
-theme_override_font_sizes/font_size = 40
+theme_override_font_sizes/font_size = 32
 text = "GESCHAFFT!"
 horizontal_alignment = 1
 
 [node name="FinalScore" type="Label" parent="UILayer/UI/LevelCompletePanel/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 56
+theme_override_font_sizes/font_size = 48
 text = "0"
 horizontal_alignment = 1
 
 [node name="NextButton" type="Button" parent="UILayer/UI/LevelCompletePanel/VBoxContainer"]
+custom_minimum_size = Vector2(140, 48)
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
-theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_primary")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_primary")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_primary")
 text = "WEITER"
 
 [node name="GameOverPanel" type="Panel" parent="UILayer/UI"]
@@ -263,10 +334,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -180.0
-offset_top = -150.0
-offset_right = 180.0
-offset_bottom = 150.0
+offset_left = -160.0
+offset_top = -140.0
+offset_right = 160.0
+offset_bottom = 140.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
@@ -278,27 +349,32 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 16
 alignment = 1
 
 [node name="Title" type="Label" parent="UILayer/UI/GameOverPanel/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.42, 0.42, 1)
-theme_override_font_sizes/font_size = 40
+theme_override_colors/font_color = Color(0.9, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 32
 text = "GAME OVER"
 horizontal_alignment = 1
 
 [node name="FinalScore" type="Label" parent="UILayer/UI/GameOverPanel/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 56
+theme_override_font_sizes/font_size = 48
 text = "0"
 horizontal_alignment = 1
 
 [node name="RetryButton" type="Button" parent="UILayer/UI/GameOverPanel/VBoxContainer"]
+custom_minimum_size = Vector2(140, 48)
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
-theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_danger")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_danger")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_danger")
 text = "NOCHMAL"
 
 [node name="BottomButtons" type="HBoxContainer" parent="UILayer"]
@@ -309,33 +385,43 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -180.0
-offset_top = -100.0
+offset_top = -70.0
 offset_right = 180.0
-offset_bottom = -30.0
+offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_constants/separation = 30
+theme_override_constants/separation = 12
 alignment = 1
 
 [node name="NewGameButton" type="Button" parent="UILayer/BottomButtons"]
-custom_minimum_size = Vector2(160, 60)
+custom_minimum_size = Vector2(100, 48)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
-theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_danger")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_danger")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_danger")
 text = "NEU"
 
 [node name="ShuffleButton" type="Button" parent="UILayer/BottomButtons"]
-custom_minimum_size = Vector2(160, 60)
+custom_minimum_size = Vector2(120, 48)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_secondary")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_secondary")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_secondary")
 text = "MISCHEN"
 
 [node name="CheatButton" type="Button" parent="UILayer/BottomButtons"]
-custom_minimum_size = Vector2(80, 60)
+custom_minimum_size = Vector2(80, 48)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(1, 0.84, 0.34, 1)
-text = "CHEAT"
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_secondary")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_secondary")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_secondary")
+text = "DEV"
 
 [node name="CheatMenu" parent="UILayer" instance=ExtResource("5_cheat")]
 visible = false
