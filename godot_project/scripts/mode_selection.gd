@@ -132,7 +132,7 @@ func _create_slot_button(slot: int) -> Button:
 			btn.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
 		else:
 			var saga_level = data.level
-			var world = int((saga_level - 1) / 5) + 1  # World changes every 5 levels
+			var world = int((saga_level - 1) / 10) + 1  # World changes every 10 levels
 			btn.text = "Slot %d: Level %d (Welt %d)" % [slot, saga_level, world]
 			btn.add_theme_color_override("font_color", Color.WHITE)
 	elif selected_mode == MODE_STORY:

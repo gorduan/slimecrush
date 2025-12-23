@@ -6,7 +6,7 @@ class_name SagaWorldMap
 signal level_selected(level: int)
 signal back_pressed
 
-const LEVELS_PER_WORLD: int = 5  # New world every 5 levels
+const LEVELS_PER_WORLD: int = 10  # New world every 10 levels
 const VISIBLE_LEVELS: int = 15  # How many level nodes to show at once
 const NODE_SPACING_Y: int = 120  # Vertical spacing between level nodes
 const PATH_WOBBLE: int = 80  # Horizontal wobble for zigzag path
@@ -158,9 +158,18 @@ func _scroll_to_current_level() -> void:
 	# Wait a frame for layout to complete
 	await get_tree().process_frame
 
-	# Find the current level node and scroll to it
-	var target_scroll = level_container.custom_minimum_size.y - (VISIBLE_LEVELS / 2 * NODE_SPACING_Y) - scroll_container.size.y / 2
-	scroll_container.scroll_vertical = int(target_scroll)
+	# Calculate which level node index corresponds to current level
+	var start_level = maxi(1, current_level - VISIBLE_LEVELS / 2)
+	var current_index = current_level - start_level
+
+	# Container height and level position
+	var container_height = level_container.custom_minimum_size.y
+	var level_y_pos = container_height - (current_index * NODE_SPACING_Y) - 100
+
+	# Scroll so that current level is centered in the view
+	var scroll_target = level_y_pos - scroll_container.size.y / 2
+	scroll_target = clampf(scroll_target, 0, container_height - scroll_container.size.y)
+	scroll_container.scroll_vertical = int(scroll_target)
 
 
 func _get_world_index(level: int) -> int:

@@ -19,9 +19,9 @@ extends Control
 @onready var cheat_menu: Control = $UILayer/CheatMenu
 
 # Story mode currency display
-@onready var currency_bar: HBoxContainer = $UILayer/UI/TopBar/CurrencyBar if has_node("UILayer/UI/TopBar/CurrencyBar") else null
-@onready var essence_display: Label = null
-@onready var upgrades_button: Button = null
+var currency_bar: HBoxContainer = null
+var essence_display: Label = null
+var upgrades_button: Button = null
 
 # Progression menu
 var progression_menu_scene: PackedScene = preload("res://scenes/story_mode/progression_menu.tscn")
@@ -198,12 +198,12 @@ func _on_new_game_pressed() -> void:
 	game_over_panel.visible = false
 	level_complete_panel.visible = false
 
-	# In saga mode, retry the same level with same seed
+	# Saga mode: Go back to world map (can retry from there)
 	if GameManager.is_saga_mode():
-		GameManager.retry_saga_level()
-	else:
-		GameManager.reset_game()
+		_return_to_saga_world_map()
+		return
 
+	GameManager.reset_game()
 	get_tree().reload_current_scene()
 
 
@@ -211,21 +211,9 @@ func _on_next_level_pressed() -> void:
 	AudioManager.play_sfx("button")
 	level_complete_panel.visible = false
 
-	# Handle saga mode differently
+	# Saga mode: Go back to world map
 	if GameManager.is_saga_mode():
-		# Load next saga level (already advanced in complete_saga_level)
-		GameManager.load_saga_level()
-
-		var new_stage = GameManager.get_current_stage()
-		game_camera.reset_camera()
-		_generate_world()
-		game_board.position = Vector2(GAME_BOARD_BASE_X, GAME_BOARD_BASE_Y)
-
-		if game_board:
-			game_board.is_input_enabled = true
-			game_board._reset_board()
-
-		_update_ui()
+		_return_to_saga_world_map()
 		return
 
 	var old_stage = GameManager.get_current_stage()
@@ -320,6 +308,15 @@ func _on_saga_level_failed() -> void:
 	tween.tween_property(game_over_panel, "modulate:a", 1.0, 0.3)
 
 	AudioManager.play_sfx("lose")
+
+
+func _return_to_saga_world_map() -> void:
+	# Fade out and return to saga world map
+	var tween = create_tween()
+	tween.tween_property(self, "modulate:a", 0.0, 0.3)
+	await tween.finished
+
+	get_tree().change_scene_to_file("res://scenes/saga_world_map.tscn")
 
 
 func _on_saga_shuffle_used(remaining: int) -> void:
