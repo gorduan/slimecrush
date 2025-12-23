@@ -151,14 +151,15 @@ func _create_slot_button(slot: int) -> Button:
 			btn.text = "Slot %d: Ch.%d Lv.%d | %d Essence" % [slot, chapter, level, essence]
 			btn.add_theme_color_override("font_color", Color.WHITE)
 	else:
+		# Endless mode
 		var data = SaveManager.get_slot_data(selected_mode, slot)
 		if data.is_empty:
 			btn.text = "Slot %d: Leer" % slot
 			btn.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
 		else:
-			var slot_score = data.score
-			var level = data.max_level
-			btn.text = "Slot %d: %d Punkte, Level %d" % [slot, slot_score, level]
+			var current_level = data.level
+			var max_level = data.max_level
+			btn.text = "Slot %d: Level %d (Best: %d)" % [slot, current_level, max_level]
 			btn.add_theme_color_override("font_color", Color.WHITE)
 
 	# Style

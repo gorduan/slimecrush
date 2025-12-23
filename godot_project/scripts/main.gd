@@ -149,6 +149,10 @@ func _on_game_over() -> void:
 	game_over_panel.visible = true
 	game_over_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 
+	# Endless mode: Reset to level 1 but keep highscore
+	if SaveManager.active_mode == SaveManager.MODE_ENDLESS:
+		_reset_endless_progress()
+
 	# Disable game board input
 	if game_board:
 		game_board.is_input_enabled = false
@@ -165,9 +169,11 @@ func _on_level_complete() -> void:
 	level_complete_panel.visible = true
 	level_complete_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 
-	# Handle saga mode completion
+	# Handle mode-specific completion
 	if GameManager.is_saga_mode():
 		GameManager.complete_saga_level()
+	elif SaveManager.active_mode == SaveManager.MODE_ENDLESS:
+		_save_endless_progress()
 	else:
 		SaveManager.unlock_level(GameManager.level + 1)
 
@@ -317,6 +323,24 @@ func _return_to_saga_world_map() -> void:
 	await tween.finished
 
 	get_tree().change_scene_to_file("res://scenes/saga_world_map.tscn")
+
+
+# ============ ENDLESS MODE FUNCTIONS ============
+
+func _save_endless_progress() -> void:
+	# Save current level progress for Endless mode
+	var data = SaveManager.get_current_slot_data()
+	data["level"] = GameManager.level + 1  # Next level
+	data["max_level"] = maxi(data.get("max_level", 1), GameManager.level + 1)
+	SaveManager.save_current_slot_data(data)
+
+
+func _reset_endless_progress() -> void:
+	# Reset to level 1 but keep highscore and max_level
+	var data = SaveManager.get_current_slot_data()
+	data["level"] = 1  # Reset to level 1
+	# Keep max_level and other stats
+	SaveManager.save_current_slot_data(data)
 
 
 func _on_saga_shuffle_used(remaining: int) -> void:
