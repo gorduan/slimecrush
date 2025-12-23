@@ -32,14 +32,11 @@ var cheat_spawn_active: bool = false
 var cheat_spawn_color: GameManager.SlimeColor = GameManager.SlimeColor.RED
 var cheat_spawn_special: GameManager.SpecialType = GameManager.SpecialType.NONE
 
-# Hidden dev button unlock - swipe detection
-var _swipe_sequence: Array[String] = []  # Stores "left" or "right" directions
-var _swipe_start_pos: Vector2 = Vector2.ZERO
-var _swipe_start_time: int = 0
-var _last_swipe_time: int = 0
-const SWIPE_THRESHOLD: float = 100.0  # Minimum swipe distance
-const SWIPE_TIMEOUT_MS: int = 2000  # Max time between swipes (2 seconds)
-const REQUIRED_SWIPES: int = 10  # 10 alternating swipes to unlock
+# Hidden dev button unlock - 15 taps on level label within 10 seconds
+var _dev_tap_count: int = 0
+var _dev_first_tap_time: int = 0
+const DEV_REQUIRED_TAPS: int = 15
+const DEV_TIMEOUT_MS: int = 10000  # 10 seconds
 
 # GameBoard base position (centered on screen)
 # Viewport is 720 wide, GameBoard is 8 tiles * 72px = 576px
@@ -78,63 +75,46 @@ func _ready() -> void:
 	if SaveManager.is_story_mode():
 		_setup_story_mode_ui()
 
-
-func _input(event: InputEvent) -> void:
-	# Hidden dev button unlock via swipe pattern
-	_handle_dev_unlock_swipe(event)
+	# Setup hidden dev button unlock
+	_setup_dev_unlock()
 
 
-func _handle_dev_unlock_swipe(event: InputEvent) -> void:
-	# Skip if dev button already visible
+func _setup_dev_unlock() -> void:
+	# Make level label clickable for hidden dev unlock
+	var level_container = $UILayer/UI/TopBar/StatsRow/LevelContainer
+	if level_container:
+		level_container.mouse_filter = Control.MOUSE_FILTER_STOP
+		level_container.gui_input.connect(_on_level_container_input)
+
+
+func _on_level_container_input(event: InputEvent) -> void:
 	if cheat_button and cheat_button.visible:
 		return
 
-	# Track touch/mouse swipes
-	if event is InputEventScreenTouch or event is InputEventMouseButton:
+	# Detect taps/clicks
+	if event is InputEventMouseButton or event is InputEventScreenTouch:
 		var is_pressed = false
-		var pos = Vector2.ZERO
-
-		if event is InputEventScreenTouch:
+		if event is InputEventMouseButton:
+			is_pressed = event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+		elif event is InputEventScreenTouch:
 			is_pressed = event.pressed
-			pos = event.position
-		elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-			is_pressed = event.pressed
-			pos = event.position
-		else:
-			return
 
 		if is_pressed:
-			_swipe_start_pos = pos
-			_swipe_start_time = Time.get_ticks_msec()
-		else:
-			# Swipe ended - check direction
-			var swipe_delta = pos - _swipe_start_pos
 			var current_time = Time.get_ticks_msec()
 
-			# Check if it's a valid horizontal swipe
-			if abs(swipe_delta.x) > SWIPE_THRESHOLD and abs(swipe_delta.x) > abs(swipe_delta.y) * 2:
-				var direction = "right" if swipe_delta.x > 0 else "left"
+			# Reset if timed out
+			if _dev_tap_count > 0 and current_time - _dev_first_tap_time > DEV_TIMEOUT_MS:
+				_dev_tap_count = 0
 
-				# Reset sequence if too much time passed
-				if _last_swipe_time > 0 and current_time - _last_swipe_time > SWIPE_TIMEOUT_MS:
-					_swipe_sequence.clear()
+			# First tap - record start time
+			if _dev_tap_count == 0:
+				_dev_first_tap_time = current_time
 
-				# Check if this continues the alternating pattern
-				if _swipe_sequence.is_empty():
-					_swipe_sequence.append(direction)
-				elif _swipe_sequence[-1] != direction:
-					# Alternating direction - add to sequence
-					_swipe_sequence.append(direction)
-				else:
-					# Same direction twice - reset
-					_swipe_sequence.clear()
-					_swipe_sequence.append(direction)
+			_dev_tap_count += 1
 
-				_last_swipe_time = current_time
-
-				# Check if unlock pattern complete
-				if _swipe_sequence.size() >= REQUIRED_SWIPES:
-					_unlock_dev_button()
+			# Check if enough taps
+			if _dev_tap_count >= DEV_REQUIRED_TAPS:
+				_unlock_dev_button()
 
 
 func _unlock_dev_button() -> void:
@@ -151,7 +131,7 @@ func _unlock_dev_button() -> void:
 		tween.tween_property(cheat_button, "modulate", Color(1, 0.84, 0.34), 0.1)
 		tween.tween_property(cheat_button, "modulate", Color.WHITE, 0.1)
 
-	_swipe_sequence.clear()
+	_dev_tap_count = 0
 
 
 func _generate_world() -> void:
