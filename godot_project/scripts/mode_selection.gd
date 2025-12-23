@@ -132,8 +132,8 @@ func _create_slot_button(slot: int) -> Button:
 			btn.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
 		else:
 			var saga_level = data.level
-			var colors = data.unlocked_colors
-			btn.text = "Slot %d: Level %d, Farben %d/6" % [slot, saga_level, colors]
+			var world = int((saga_level - 1) / 5) + 1  # World changes every 5 levels
+			btn.text = "Slot %d: Level %d (Welt %d)" % [slot, saga_level, world]
 			btn.add_theme_color_override("font_color", Color.WHITE)
 	elif selected_mode == MODE_STORY:
 		# Story mode shows campaign progress and currencies for THIS SLOT
@@ -223,7 +223,11 @@ func _on_slot_selected(slot: int) -> void:
 	tween.tween_property(self, "modulate:a", 0.0, 0.3)
 	await tween.finished
 
-	get_tree().change_scene_to_file("res://scenes/main.tscn")
+	# Saga mode goes to world map, others go directly to game
+	if selected_mode == MODE_SAGA:
+		get_tree().change_scene_to_file("res://scenes/saga_world_map.tscn")
+	else:
+		get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 
 func _show_coming_soon() -> void:

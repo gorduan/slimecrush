@@ -79,7 +79,8 @@ func _initialize_board() -> void:
 
 	# Set seed for saga mode (deterministic spawning)
 	if GameManager.is_saga_mode():
-		var level_seed = SaveManager.get_saga_seed()
+		var saga_level = SaveManager.get_saga_level()
+		var level_seed = GameManager.get_saga_seed(saga_level)
 		seed(level_seed)
 		saga_shuffle_count = 0
 

@@ -84,8 +84,6 @@ func _create_empty_slot(mode: String, slot: int) -> void:
 func _create_empty_saga_slot(slot: int) -> void:
 	var section = _get_slot_section(MODE_SAGA, slot)
 	config.set_value(section, "level", 1)
-	config.set_value(section, "seed", 0)  # Will be generated on first play
-	config.set_value(section, "unlocked_colors", 1)  # Start with GREEN only
 	config.set_value(section, "shuffles_used", 0)  # Shuffles used in current level
 	config.set_value(section, "is_empty", true)
 
@@ -298,13 +296,12 @@ func reset_all_data() -> void:
 
 
 # ============ SAGA MODE FUNCTIONS ============
+# Simplified: Only stores current level and shuffles used (per attempt)
 
 func get_saga_slot_data(slot: int) -> Dictionary:
 	var section = _get_slot_section(MODE_SAGA, slot)
 	return {
 		"level": config.get_value(section, "level", 1),
-		"seed": config.get_value(section, "seed", 0),
-		"unlocked_colors": config.get_value(section, "unlocked_colors", 1),
 		"shuffles_used": config.get_value(section, "shuffles_used", 0),
 		"is_empty": config.get_value(section, "is_empty", true)
 	}
@@ -313,8 +310,6 @@ func get_saga_slot_data(slot: int) -> Dictionary:
 func save_saga_slot_data(slot: int, data: Dictionary) -> void:
 	var section = _get_slot_section(MODE_SAGA, slot)
 	config.set_value(section, "level", data.get("level", 1))
-	config.set_value(section, "seed", data.get("seed", 0))
-	config.set_value(section, "unlocked_colors", data.get("unlocked_colors", 1))
 	config.set_value(section, "shuffles_used", data.get("shuffles_used", 0))
 	config.set_value(section, "is_empty", false)
 	save_data()
@@ -329,66 +324,43 @@ func save_current_saga_data(data: Dictionary) -> void:
 
 
 func get_saga_level() -> int:
-	var data = get_current_saga_data()
-	return data.get("level", 1)
+	var section = _get_slot_section(MODE_SAGA, active_slot)
+	return config.get_value(section, "level", 1)
 
 
-func set_saga_level(level: int) -> void:
-	var data = get_current_saga_data()
-	data["level"] = level
-	# Update unlocked colors based on level (1 color per 10 levels, max 6)
-	data["unlocked_colors"] = mini(1 + int((level - 1) / 10), 6)
-	data["shuffles_used"] = 0  # Reset shuffles for new level
-	save_current_saga_data(data)
-
-
-func get_saga_seed() -> int:
-	var data = get_current_saga_data()
-	var current_seed = data.get("seed", 0)
-	if current_seed == 0:
-		# Generate new seed based on slot and level for determinism
-		current_seed = hash(str(active_slot) + "_" + str(data.get("level", 1)))
-		data["seed"] = current_seed
-		save_current_saga_data(data)
-	return current_seed
-
-
-func get_saga_unlocked_colors() -> int:
-	var data = get_current_saga_data()
-	return data.get("unlocked_colors", 1)
+func set_saga_level(new_level: int) -> void:
+	var section = _get_slot_section(MODE_SAGA, active_slot)
+	config.set_value(section, "level", new_level)
+	config.set_value(section, "shuffles_used", 0)  # Reset shuffles for new level
+	config.set_value(section, "is_empty", false)
+	save_data()
 
 
 func get_saga_shuffles_remaining() -> int:
-	var data = get_current_saga_data()
-	return 3 - data.get("shuffles_used", 0)
+	var section = _get_slot_section(MODE_SAGA, active_slot)
+	var used = config.get_value(section, "shuffles_used", 0)
+	return 3 - used
 
 
 func use_saga_shuffle() -> bool:
-	var data = get_current_saga_data()
-	var used = data.get("shuffles_used", 0)
+	var section = _get_slot_section(MODE_SAGA, active_slot)
+	var used = config.get_value(section, "shuffles_used", 0)
 	if used < 3:
-		data["shuffles_used"] = used + 1
-		save_current_saga_data(data)
+		config.set_value(section, "shuffles_used", used + 1)
+		save_data()
 		return true  # Shuffle allowed
 	return false  # No shuffles remaining
 
 
 func reset_saga_shuffles() -> void:
-	var data = get_current_saga_data()
-	data["shuffles_used"] = 0
-	save_current_saga_data(data)
+	var section = _get_slot_section(MODE_SAGA, active_slot)
+	config.set_value(section, "shuffles_used", 0)
+	save_data()
 
 
 func advance_saga_level() -> void:
-	var data = get_current_saga_data()
-	var new_level = data.get("level", 1) + 1
-	data["level"] = new_level
-	# Update unlocked colors (1 color per 10 levels, max 6)
-	data["unlocked_colors"] = mini(1 + int((new_level - 1) / 10), 6)
-	# Generate new seed for new level
-	data["seed"] = hash(str(active_slot) + "_" + str(new_level))
-	data["shuffles_used"] = 0
-	save_current_saga_data(data)
+	var current = get_saga_level()
+	set_saga_level(current + 1)
 
 
 func is_saga_mode() -> bool:

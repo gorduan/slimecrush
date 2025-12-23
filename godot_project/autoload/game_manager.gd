@@ -359,24 +359,14 @@ func get_total_stages_completed() -> int:
 
 # ============ SAGA MODE FUNCTIONS ============
 
-# Color unlock order for Saga mode (from lowest to highest points)
-const SAGA_COLOR_UNLOCK_ORDER: Array = [
-	SlimeColor.GREEN,   # Level 1+  (1 point)
-	SlimeColor.BLUE,    # Level 11+ (2 points)
-	SlimeColor.PURPLE,  # Level 21+ (3 points)
-	SlimeColor.YELLOW,  # Level 31+ (4 points)
-	SlimeColor.ORANGE,  # Level 41+ (5 points)
-	SlimeColor.RED      # Level 51+ (6 points)
-]
-
-# Colorless variants in same order
-const SAGA_COLORLESS_ORDER: Array = [
-	SlimeColor.GREEN_COLORLESS,
-	SlimeColor.BLUE_COLORLESS,
-	SlimeColor.PURPLE_COLORLESS,
-	SlimeColor.YELLOW_COLORLESS,
-	SlimeColor.ORANGE_COLORLESS,
-	SlimeColor.RED_COLORLESS
+# All 6 colors available in Saga mode (no colorless variants)
+const SAGA_ALL_COLORS: Array = [
+	SlimeColor.GREEN,
+	SlimeColor.BLUE,
+	SlimeColor.PURPLE,
+	SlimeColor.YELLOW,
+	SlimeColor.ORANGE,
+	SlimeColor.RED
 ]
 
 
@@ -385,68 +375,48 @@ func is_saga_mode() -> bool:
 
 
 func load_saga_level() -> void:
-	var saga_data = SaveManager.get_current_saga_data()
-	level = saga_data.get("level", 1)
+	var saga_level = SaveManager.get_saga_level()
+	level = saga_level
 	score = 0
-	moves = calculate_saga_moves(level)
-	target_score = calculate_saga_target(level)
+	moves = calculate_saga_moves(saga_level)
+	target_score = calculate_saga_target(saga_level)
 	combo_count = 0
 	is_game_active = true
 
 
 func calculate_saga_moves(saga_level: int) -> int:
-	# Start with 15 moves, +1 every 5 levels, max 30
-	return mini(15 + int(saga_level / 5), 30)
+	# Start with 20 moves, +1 every 5 levels, max 35
+	return mini(20 + int(saga_level / 5), 35)
 
 
 func calculate_saga_target(saga_level: int) -> int:
-	# Target based on available colors and level
-	var unlocked = get_saga_unlocked_color_count(saga_level)
-	# Base target scales with unlocked colors (more colors = more points possible)
-	var base_target = 50 + (unlocked * 30)
-	# Scale with level
-	return int(base_target * (1.0 + saga_level * 0.05))
+	# Progressive target score based on level
+	# Starts at 500, increases by 50 per level
+	return 500 + (saga_level - 1) * 50
 
 
-func get_saga_unlocked_color_count(saga_level: int) -> int:
-	# 1 color per 10 levels, max 6
-	return mini(1 + int((saga_level - 1) / 10), 6)
-
-
-func get_saga_available_colors(saga_level: int) -> Array:
+func get_saga_available_colors(_saga_level: int) -> Array:
 	"""
-	Returns array of available SlimeColors for the given saga level.
-	Includes unlocked real colors + remaining colorless variants.
+	Returns all 6 colors for Saga mode.
+	Saga mode uses all colors from the start (no colorless variants).
 	"""
-	var unlocked_count = get_saga_unlocked_color_count(saga_level)
-	var available: Array = []
-
-	# Add unlocked real colors
-	for i in range(unlocked_count):
-		available.append(SAGA_COLOR_UNLOCK_ORDER[i])
-
-	# Add colorless variants for locked colors
-	for i in range(unlocked_count, 6):
-		available.append(SAGA_COLORLESS_ORDER[i])
-
-	return available
+	return SAGA_ALL_COLORS.duplicate()
 
 
-func get_saga_random_color(saga_level: int) -> SlimeColor:
+func get_saga_random_color(_saga_level: int) -> SlimeColor:
 	"""
-	Returns a random color from the available colors for the given saga level.
-	This is used for deterministic spawning in saga mode.
+	Returns a random color from all 6 colors.
+	Used for deterministic spawning in saga mode.
 	"""
-	var available = get_saga_available_colors(saga_level)
-	return available[randi() % available.size()]
+	return SAGA_ALL_COLORS[randi() % SAGA_ALL_COLORS.size()]
 
 
-func get_saga_seed(_saga_level: int) -> int:
+func get_saga_seed(saga_level: int) -> int:
 	"""
 	Returns a deterministic seed for the given saga level.
-	Same level always produces same seed.
+	Same level always produces the same board layout.
 	"""
-	return SaveManager.get_saga_seed()
+	return hash("saga_level_" + str(saga_level))
 
 
 func use_saga_shuffle() -> bool:
@@ -472,7 +442,6 @@ func get_saga_shuffles_remaining() -> int:
 func complete_saga_level() -> void:
 	"""Called when a saga level is completed successfully."""
 	SaveManager.advance_saga_level()
-	level_complete.emit()
 
 
 func retry_saga_level() -> void:
