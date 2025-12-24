@@ -7,6 +7,7 @@ const SETTINGS_SECTION: String = "settings"
 const PROGRESS_SECTION: String = "progress"
 const HIGHSCORES_SECTION: String = "highscores"
 const ACTIVE_SECTION: String = "active"
+const GALLERY_SECTION: String = "gallery"
 
 # Game modes
 const MODE_ENDLESS: String = "endless"
@@ -147,18 +148,23 @@ func delete_slot(mode: String, slot: int) -> void:
 
 func _reset_story_slot(slot: int) -> void:
 	var section = _get_story_section_for_slot(slot)
-	# Remove all story progression keys for this slot
+	# Remove all story progression keys for this slot by erasing the entire section
 	if config.has_section(section):
-		for key in config.get_section_keys(section):
-			config.set_value(section, key, null)
+		config.erase_section(section)
 
 
 func is_slot_empty(mode: String, slot: int) -> bool:
 	if mode == MODE_STORY:
-		# Story mode checks completed_levels
+		# Story mode checks for any progress indicators
 		var story_section = _get_story_section_for_slot(slot)
 		var completed_str = config.get_value(story_section, "completed_levels", "")
-		return completed_str == "" or completed_str == null
+		var essence = config.get_value(story_section, "slime_essence", 0)
+		var skill_nodes = config.get_value(story_section, "skill_tree_nodes", "{}")
+		# Consider slot non-empty if any of these exist
+		var has_completed = completed_str != "" and completed_str != null
+		var has_essence = essence > 0
+		var has_skills = skill_nodes != "{}" and skill_nodes != null
+		return not (has_completed or has_essence or has_skills)
 	var slot_section = _get_slot_section(mode, slot)
 	return config.get_value(slot_section, "is_empty", true)
 
@@ -290,9 +296,25 @@ func set_vibration(enabled: bool) -> void:
 	save_data()
 
 
-# Reset all data
+# Reset all data - complete wipe to fresh installation state
 func reset_all_data() -> void:
+	# Delete the save file
+	var dir = DirAccess.open("user://")
+	if dir:
+		if dir.file_exists("slimecrush_save.cfg"):
+			dir.remove("slimecrush_save.cfg")
+
+	# Create fresh config
+	config = ConfigFile.new()
+
+	# Reset active mode/slot
+	active_mode = MODE_ENDLESS
+	active_slot = 1
+
+	# Create default save structure
 	_create_default_save()
+
+	print("All save data has been reset to fresh installation state.")
 
 
 # ============ SAGA MODE FUNCTIONS ============
@@ -430,6 +452,10 @@ func save_story_progression(data: Dictionary) -> void:
 		var stars = campaign.get("level_stars", {})
 		config.set_value(section, "level_stars", JSON.stringify(stars))
 
+	# Save skill tree nodes as JSON
+	if data.has("skill_tree_nodes"):
+		config.set_value(section, "skill_tree_nodes", JSON.stringify(data.skill_tree_nodes))
+
 	save_data()
 
 
@@ -501,6 +527,13 @@ func load_story_progression() -> Dictionary:
 	if stars_parsed != null:
 		data.campaign.level_stars = stars_parsed
 
+	# Load skill tree nodes from JSON
+	data.skill_tree_nodes = {}
+	var nodes_json = config.get_value(section, "skill_tree_nodes", "{}")
+	var nodes_parsed = JSON.parse_string(nodes_json)
+	if nodes_parsed != null:
+		data.skill_tree_nodes = nodes_parsed
+
 	return data
 
 
@@ -531,8 +564,99 @@ func load_story_progression_for_slot(slot: int) -> Dictionary:
 
 func reset_story_progression() -> void:
 	var section = _get_story_section()
-	# Remove all story progression keys for current slot
+	# Remove all story progression keys for current slot by erasing the entire section
 	if config.has_section(section):
-		for key in config.get_section_keys(section):
-			config.set_value(section, key, null)
+		config.erase_section(section)
 	save_data()
+
+
+# ============ GALLERY FUNCTIONS ============
+# Global gallery data (not per-slot, shared across all modes)
+
+func get_unlocked_images() -> Array:
+	var images = config.get_value(GALLERY_SECTION, "unlocked_images", [])
+	# Ensure we return an Array (might be stored as PackedInt32Array)
+	if images is PackedInt32Array:
+		var arr: Array = []
+		for i in images:
+			arr.append(i)
+		return arr
+	return images
+
+
+func unlock_images(image_ids: Array) -> void:
+	var current = get_unlocked_images()
+	for id in image_ids:
+		if not id in current:
+			current.append(id)
+	config.set_value(GALLERY_SECTION, "unlocked_images", current)
+	save_data()
+
+
+func get_total_levels_completed() -> int:
+	return config.get_value(GALLERY_SECTION, "total_levels_completed", 0)
+
+
+func increment_levels_completed() -> void:
+	var count = get_total_levels_completed() + 1
+	config.set_value(GALLERY_SECTION, "total_levels_completed", count)
+	save_data()
+
+
+func get_chest_milestones_claimed() -> Array:
+	var milestones = config.get_value(GALLERY_SECTION, "chest_milestones_claimed", [])
+	# Ensure we return an Array
+	if milestones is PackedInt32Array:
+		var arr: Array = []
+		for m in milestones:
+			arr.append(m)
+		return arr
+	return milestones
+
+
+func claim_chest_milestone(milestone: int) -> void:
+	var claimed = get_chest_milestones_claimed()
+	if not milestone in claimed:
+		claimed.append(milestone)
+		config.set_value(GALLERY_SECTION, "chest_milestones_claimed", claimed)
+		save_data()
+
+
+func should_show_chest() -> bool:
+	# Don't show chest if all images are unlocked
+	if get_unlocked_images().size() >= 6:
+		return false
+
+	var total = get_total_levels_completed()
+	var claimed = get_chest_milestones_claimed()
+
+	# First level ever completed (milestone 1)
+	if total >= 1 and not 1 in claimed:
+		return true
+
+	# Every 20 levels thereafter (20, 40, 60...)
+	var milestone = int(total / 20) * 20
+	if milestone >= 20 and not milestone in claimed:
+		return true
+
+	return false
+
+
+func get_current_chest_milestone() -> int:
+	var total = get_total_levels_completed()
+	var claimed = get_chest_milestones_claimed()
+
+	# First level milestone
+	if total >= 1 and not 1 in claimed:
+		return 1
+
+	# Every 20 levels
+	var milestone = int(total / 20) * 20
+	if milestone >= 20 and not milestone in claimed:
+		return milestone
+
+	return 0
+
+
+func has_unlocked_images() -> bool:
+	return get_unlocked_images().size() > 0

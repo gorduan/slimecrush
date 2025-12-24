@@ -24,8 +24,12 @@ var currency_bar: HBoxContainer = null
 var essence_display: Label = null
 var upgrades_button: Button = null
 
-# Progression menu
-var progression_menu_scene: PackedScene = preload("res://scenes/story_mode/progression_menu.tscn")
+# Progression menu / Skill Tree
+var skill_tree_scene: PackedScene = preload("res://scenes/story_mode/skill_tree.tscn")
+
+# Treasure chest for gallery rewards
+var treasure_chest_scene: PackedScene = preload("res://scenes/treasure_chest.tscn")
+var pending_chest_show: bool = false
 
 # Cheat menu spawn mode state
 var cheat_spawn_active: bool = false
@@ -232,9 +236,8 @@ func _on_game_over() -> void:
 
 
 func _on_level_complete() -> void:
-	final_score_label.text = str(GameManager.score)
-	level_complete_panel.visible = true
-	level_complete_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	# Increment total levels completed (for gallery/chest system)
+	SaveManager.increment_levels_completed()
 
 	# Handle mode-specific completion
 	if GameManager.is_saga_mode():
@@ -248,12 +251,39 @@ func _on_level_complete() -> void:
 	if game_board:
 		game_board.is_input_enabled = false
 
+	AudioManager.play_sfx("win")
+	AudioManager.vibrate(200)
+
+	# Check if we should show treasure chest
+	if SaveManager.should_show_chest():
+		_show_treasure_chest()
+	else:
+		_show_level_complete_panel()
+
+
+func _show_level_complete_panel() -> void:
+	final_score_label.text = str(GameManager.score)
+	level_complete_panel.visible = true
+	level_complete_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+
 	var tween = create_tween()
 	level_complete_panel.modulate.a = 0.0
 	tween.tween_property(level_complete_panel, "modulate:a", 1.0, 0.3)
 
-	AudioManager.play_sfx("win")
-	AudioManager.vibrate(200)
+
+func _show_treasure_chest() -> void:
+	var milestone = SaveManager.get_current_chest_milestone()
+
+	# Instance and show treasure chest
+	var chest = treasure_chest_scene.instantiate()
+	chest.milestone = milestone
+	chest.chest_completed.connect(_on_chest_completed)
+	$UILayer.add_child(chest)
+
+
+func _on_chest_completed() -> void:
+	# After chest is closed, show the level complete panel
+	_show_level_complete_panel()
 
 
 func _on_highscore_achieved(score: int) -> void:
@@ -445,13 +475,13 @@ func _setup_story_mode_ui() -> void:
 	currency_row.add_child(essence_container)
 	essence_display = essence_container.get_node("Value")
 
-	# Upgrades button
+	# Skill Tree button
 	upgrades_button = Button.new()
-	upgrades_button.text = "UPGRADES"
-	upgrades_button.custom_minimum_size = Vector2(120, 40)
+	upgrades_button.text = "SKILLS"
+	upgrades_button.custom_minimum_size = Vector2(100, 40)
 	upgrades_button.add_theme_font_size_override("font_size", 16)
-	upgrades_button.add_theme_color_override("font_color", Color(1, 0.84, 0.34))
-	upgrades_button.pressed.connect(_on_upgrades_pressed)
+	upgrades_button.add_theme_color_override("font_color", Color(0.91, 0.47, 0.96))  # Pink/magenta
+	upgrades_button.pressed.connect(_on_skill_tree_pressed)
 	currency_row.add_child(upgrades_button)
 
 	# Connect to currency changes
@@ -487,22 +517,32 @@ func _on_story_currency_changed(currency: String, new_amount: int) -> void:
 		tween.tween_property(essence_display, "scale", Vector2.ONE, 0.1)
 
 
-func _on_upgrades_pressed() -> void:
+func _on_skill_tree_pressed() -> void:
 	AudioManager.play_sfx("button")
 
-	# Disable game board input while menu is open
+	# Disable game board input while skill tree is open
 	if game_board:
 		game_board.is_input_enabled = false
 
-	# Instance and show progression menu
-	var menu = progression_menu_scene.instantiate()
-	menu.closed.connect(_on_progression_menu_closed)
-	$UILayer.add_child(menu)
+	# Instance and show skill tree
+	var tree = skill_tree_scene.instantiate()
+	tree.closed.connect(_on_skill_tree_closed)
+	$UILayer.add_child(tree)
 
 	# Fade in
-	menu.modulate.a = 0.0
+	tree.modulate.a = 0.0
 	var tween = create_tween()
-	tween.tween_property(menu, "modulate:a", 1.0, 0.3)
+	tween.tween_property(tree, "modulate:a", 1.0, 0.3)
+
+
+func _on_skill_tree_closed() -> void:
+	# Re-enable game board input
+	if game_board:
+		game_board.is_input_enabled = true
+
+	# Update essence display
+	if essence_display:
+		essence_display.text = str(ProgressionManager.currencies.slime_essence)
 
 
 func _on_progression_menu_closed() -> void:

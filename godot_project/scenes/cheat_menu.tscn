@@ -204,6 +204,22 @@ theme_override_font_sizes/font_size = 16
 text = "Tap a cell on the board to replace slime"
 horizontal_alignment = 1
 
+[node name="Separator4" type="HSeparator" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="DangerZone" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 18
+text = "Danger Zone"
+
+[node name="ResetAllButton" type="Button" parent="Panel/VBox"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "ALLE DATEN LÖSCHEN"
+
 [node name="Spacer" type="Control" parent="Panel/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -230,4 +246,5 @@ text = "CLOSE"
 [connection signal="pressed" from="Panel/VBox/SpecialButtons/StripedVBtn" to="." method="_on_special_selected" binds= [2]]
 [connection signal="pressed" from="Panel/VBox/SpecialButtons/WrappedBtn" to="." method="_on_special_selected" binds= [3]]
 [connection signal="pressed" from="Panel/VBox/SpecialButtons/ColorBombBtn" to="." method="_on_special_selected" binds= [4]]
+[connection signal="pressed" from="Panel/VBox/ResetAllButton" to="." method="_on_reset_all_pressed"]
 [connection signal="pressed" from="Panel/VBox/CloseButton" to="." method="_on_close_pressed"]

@@ -113,6 +113,37 @@ func _on_close_pressed() -> void:
 	closed.emit()
 
 
+func _on_reset_all_pressed() -> void:
+	AudioManager.play_sfx("button")
+	# Show confirmation dialog
+	var dialog = ConfirmationDialog.new()
+	dialog.dialog_text = "ALLE DATEN LÖSCHEN?\n\nDies setzt das Spiel auf Neuinstallations-Zustand zurück:\n- Alle Highscores\n- Alle Spielstände\n- Alle freigeschalteten Bilder\n- Story Fortschritt\n\nDiese Aktion kann NICHT rückgängig gemacht werden!"
+	dialog.ok_button_text = "LÖSCHEN"
+	dialog.cancel_button_text = "Abbrechen"
+	dialog.confirmed.connect(_confirm_reset_all.bind(dialog))
+	dialog.canceled.connect(func(): dialog.queue_free())
+	add_child(dialog)
+	dialog.popup_centered()
+
+
+func _confirm_reset_all(dialog: ConfirmationDialog) -> void:
+	dialog.queue_free()
+
+	# Delete all save data
+	SaveManager.reset_all_data()
+
+	# Reset ProgressionManager if available
+	if ProgressionManager and ProgressionManager.has_method("reset_progression"):
+		ProgressionManager.reset_progression()
+
+	AudioManager.play_sfx("special")
+	AudioManager.vibrate(300)
+
+	# Return to title screen
+	await get_tree().create_timer(0.3).timeout
+	get_tree().change_scene_to_file("res://scenes/title_screen.tscn")
+
+
 # Called by game_board when a cell is tapped in spawn mode
 func get_spawn_config() -> Dictionary:
 	return {

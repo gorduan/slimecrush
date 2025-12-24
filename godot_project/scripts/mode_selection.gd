@@ -8,6 +8,7 @@ const MODE_STORY = SaveManager.MODE_STORY
 var selected_mode: String = MODE_ENDLESS
 var slot_buttons: Array[Button] = []
 var pending_delete_slot: int = -1  # Slot pending deletion confirmation
+var gallery_button: Button = null
 
 @onready var endless_button: Button = $VBoxContainer/ModeButtons/EndlessButton
 @onready var saga_button: Button = $VBoxContainer/ModeButtons/SagaButton
@@ -22,6 +23,7 @@ func _ready() -> void:
 	_setup_mode_buttons()
 	_update_slots_display()
 	_setup_delete_dialog()
+	_setup_gallery_button()
 
 	highscores_button.pressed.connect(_on_highscores_pressed)
 	back_button.pressed.connect(_on_back_pressed)
@@ -112,9 +114,8 @@ func _is_slot_empty(slot: int) -> bool:
 		var data = SaveManager.get_saga_slot_data(slot)
 		return data.is_empty
 	elif selected_mode == MODE_STORY:
-		var progression = SaveManager.load_story_progression_for_slot(slot)
-		var campaign = progression.get("campaign", {})
-		return campaign.get("completed_levels", []).is_empty()
+		# Use SaveManager's is_slot_empty which checks essence, completed levels, and skill nodes
+		return SaveManager.is_slot_empty(MODE_STORY, slot)
 	else:
 		var data = SaveManager.get_slot_data(selected_mode, slot)
 		return data.is_empty
@@ -275,6 +276,15 @@ func _on_delete_slot_pressed(slot: int) -> void:
 
 func _on_delete_confirmed() -> void:
 	if pending_delete_slot > 0:
+		# If deleting a story mode slot, always reset ProgressionManager
+		# (will be reloaded when slot is selected again)
+		if selected_mode == MODE_STORY:
+			# Temporarily set active slot to the one being deleted so reset works
+			var old_active = SaveManager.active_slot
+			SaveManager.active_slot = pending_delete_slot
+			ProgressionManager.reset_progression()
+			SaveManager.active_slot = old_active
+
 		# Delete the slot data
 		SaveManager.delete_slot(selected_mode, pending_delete_slot)
 		pending_delete_slot = -1
@@ -288,3 +298,50 @@ func _on_delete_confirmed() -> void:
 
 func _on_delete_canceled() -> void:
 	pending_delete_slot = -1
+
+
+# ============ GALLERY BUTTON ============
+
+func _setup_gallery_button() -> void:
+	# Only show gallery button if images are unlocked
+	if not SaveManager.has_unlocked_images():
+		return
+
+	gallery_button = Button.new()
+	gallery_button.text = "Galerie"
+	gallery_button.custom_minimum_size = Vector2(340, 60)
+	gallery_button.add_theme_font_size_override("font_size", 22)
+
+	# Purple style
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.5, 0.3, 0.7, 0.9)
+	style.set_corner_radius_all(15)
+	gallery_button.add_theme_stylebox_override("normal", style)
+
+	var hover_style = StyleBoxFlat.new()
+	hover_style.bg_color = Color(0.6, 0.4, 0.8, 0.9)
+	hover_style.set_corner_radius_all(15)
+	gallery_button.add_theme_stylebox_override("hover", hover_style)
+
+	var pressed_style = StyleBoxFlat.new()
+	pressed_style.bg_color = Color(0.7, 0.5, 0.9, 0.9)
+	pressed_style.set_corner_radius_all(15)
+	gallery_button.add_theme_stylebox_override("pressed", pressed_style)
+
+	gallery_button.pressed.connect(_on_gallery_pressed)
+
+	# Add between highscores and back buttons
+	var vbox = $VBoxContainer
+	var index = highscores_button.get_index() + 1
+	vbox.add_child(gallery_button)
+	vbox.move_child(gallery_button, index)
+
+
+func _on_gallery_pressed() -> void:
+	AudioManager.play_sfx("button")
+
+	var tween = create_tween()
+	tween.tween_property(self, "modulate:a", 0.0, 0.3)
+	await tween.finished
+
+	get_tree().change_scene_to_file("res://scenes/gallery.tscn")
