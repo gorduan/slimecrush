@@ -113,11 +113,53 @@ func _is_cell_playable(x: int, y: int) -> bool:
 	return board_template[y][x] == 1
 
 
+# Get available colors for Story Mode
+# Green is always colored from the start, others are colorless until mastery unlocked
+func _get_story_available_colors() -> Array:
+	var colors: Array = []
+
+	# Green is always colored (unlocked from start)
+	colors.append(GameManager.SlimeColor.GREEN)
+
+	# Other colors: check mastery level, if > 0 use colored, else colorless
+	var mastery = ProgressionManager.color_mastery
+
+	if mastery.get("red", 0) > 0:
+		colors.append(GameManager.SlimeColor.RED)
+	else:
+		colors.append(GameManager.SlimeColor.RED_COLORLESS)
+
+	if mastery.get("orange", 0) > 0:
+		colors.append(GameManager.SlimeColor.ORANGE)
+	else:
+		colors.append(GameManager.SlimeColor.ORANGE_COLORLESS)
+
+	if mastery.get("yellow", 0) > 0:
+		colors.append(GameManager.SlimeColor.YELLOW)
+	else:
+		colors.append(GameManager.SlimeColor.YELLOW_COLORLESS)
+
+	if mastery.get("blue", 0) > 0:
+		colors.append(GameManager.SlimeColor.BLUE)
+	else:
+		colors.append(GameManager.SlimeColor.BLUE_COLORLESS)
+
+	if mastery.get("purple", 0) > 0:
+		colors.append(GameManager.SlimeColor.PURPLE)
+	else:
+		colors.append(GameManager.SlimeColor.PURPLE_COLORLESS)
+
+	return colors
+
+
 func _get_non_matching_color(x: int, y: int) -> GameManager.SlimeColor:
 	# Get available colors based on mode
 	var available_colors: Array
 	if GameManager.is_saga_mode():
 		available_colors = GameManager.get_saga_available_colors(GameManager.level).duplicate()
+	elif SaveManager.is_story_mode():
+		# Story mode: Green is always colored, others based on mastery
+		available_colors = _get_story_available_colors()
 	else:
 		# Endless mode: all 6 base colors
 		available_colors = [
@@ -149,9 +191,24 @@ func _get_non_matching_color(x: int, y: int) -> GameManager.SlimeColor:
 		# Fallback
 		if GameManager.is_saga_mode():
 			return GameManager.get_saga_random_color(GameManager.level)
+		elif SaveManager.is_story_mode():
+			# Return random from story available colors
+			var story_colors = _get_story_available_colors()
+			return story_colors[randi() % story_colors.size()]
 		return GameManager.get_random_slime_color()
 
 	return available_colors[randi() % available_colors.size()]
+
+
+# Get a random color appropriate for the current game mode
+func _get_random_color_for_mode() -> GameManager.SlimeColor:
+	if GameManager.is_saga_mode():
+		return GameManager.get_saga_random_color(GameManager.level)
+	elif SaveManager.is_story_mode():
+		var story_colors = _get_story_available_colors()
+		return story_colors[randi() % story_colors.size()]
+	else:
+		return GameManager.get_random_slime_color()
 
 
 func _create_slime(color: GameManager.SlimeColor, grid_pos: Vector2i, special: GameManager.SpecialType = GameManager.SpecialType.NONE) -> Slime:
@@ -971,12 +1028,8 @@ func _fill_empty_spaces() -> void:
 			if not _is_cell_playable(x, y):
 				continue  # Skip non-playable cells
 			if board[x][y] == null:
-				# Use saga-appropriate colors or regular random
-				var color: GameManager.SlimeColor
-				if GameManager.is_saga_mode():
-					color = GameManager.get_saga_random_color(GameManager.level)
-				else:
-					color = GameManager.get_random_slime_color()
+				# Use mode-appropriate colors (saga/story/endless)
+				var color = _get_random_color_for_mode()
 				var slime = _create_slime(color, Vector2i(x, y))
 				board[x][y] = slime
 				# Start above board - higher for pieces that need to fall further
@@ -1336,7 +1389,7 @@ func _force_fill_empty_cells() -> void:
 
 			if needs_replacement:
 				board[x][y] = null
-				var color = GameManager.get_random_slime_color()
+				var color = _get_random_color_for_mode()
 				var slime = _create_slime(color, Vector2i(x, y))
 				board[x][y] = slime
 				print("FORCE FILL: ", x, ",", y, " - ", reason)
@@ -1378,7 +1431,7 @@ func _check_and_fix_board() -> void:
 			if needs_fix:
 				has_empty = true
 				# Immediately create a new slime
-				var color = GameManager.get_random_slime_color()
+				var color = _get_random_color_for_mode()
 				var slime = _create_slime(color, Vector2i(x, y))
 				board[x][y] = slime
 				fixed_count += 1

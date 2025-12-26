@@ -91,6 +91,11 @@ var color_mastery: Dictionary = {
 	"purple": 0
 }
 
+# ============ SKILL TREE ============
+
+# Skill tree node levels (node_id -> level)
+var skill_tree_nodes: Dictionary = {}
+
 # ============ CAMPAIGN ============
 
 var campaign: Dictionary = {
@@ -231,84 +236,120 @@ func can_afford_upgrade(category: String, upgrade_id: String) -> bool:
 	return false
 
 
-# ============ UPGRADE EFFECT GETTERS ============
+# ============ SKILL TREE HELPERS ============
+
+func get_skill_node_level(node_id: String) -> int:
+	return skill_tree_nodes.get(node_id, 0)
+
+
+func _sum_skill_effect(node_ids: Array, effect_per_level: float) -> float:
+	var total: float = 0.0
+	for node_id in node_ids:
+		total += get_skill_node_level(node_id) * effect_per_level
+	return total
+
+
+# ============ UPGRADE EFFECT GETTERS (from Skill Tree) ============
 
 func get_score_multiplier() -> float:
-	# Base multiplier + point boost upgrade
-	var boost_level = get_upgrade_level("scoring", "point_boost")
-	return 1.0 + (boost_level * 0.05)  # +5% per level
+	# Sum all point boost nodes
+	var bonus: float = 0.0
+	bonus += get_skill_node_level("point_boost_1") * 0.05
+	bonus += get_skill_node_level("point_boost_2") * 0.08
+	bonus += get_skill_node_level("point_boost_3") * 0.12
+	return 1.0 + bonus
 
 
 func get_match_4_bonus() -> float:
-	var level = get_upgrade_level("scoring", "match_4_bonus")
-	return 1.0 + (level * 0.08)  # +8% per level
+	var level = get_skill_node_level("match4_bonus")
+	return 1.0 + (level * 0.10)  # +10% per level
 
 
 func get_match_5_bonus() -> float:
-	var level = get_upgrade_level("scoring", "match_5_bonus")
-	return 1.0 + (level * 0.10)  # +10% per level
-
-
-func get_special_activation_bonus() -> float:
-	var level = get_upgrade_level("scoring", "special_bonus")
+	var level = get_skill_node_level("match5_bonus")
 	return 1.0 + (level * 0.15)  # +15% per level
 
 
+func get_special_activation_bonus() -> float:
+	var level = get_skill_node_level("special_score_bonus")
+	return 1.0 + (level * 0.20)  # +20% per level
+
+
 func get_color_score_bonus(color: String) -> float:
-	var upgrade_id = "color_mastery_" + color
-	var level = get_upgrade_level("scoring", upgrade_id)
-	return 1.0 + (level * 0.10)  # +10% per level
+	var node_id = color + "_mastery"
+	var level = get_skill_node_level(node_id)
+	var bonus = level * 0.15  # +15% per level
+
+	# Add all_color_multiplier bonus
+	bonus += get_skill_node_level("color_master") * 0.05
+
+	return 1.0 + bonus
 
 
 func get_bonus_starting_moves() -> int:
-	return get_upgrade_level("moves", "starting_moves")  # +1 per level
+	var total: int = 0
+	total += get_skill_node_level("starting_moves_1") * 1
+	total += get_skill_node_level("starting_moves_2") * 2
+	total += get_skill_node_level("starting_moves_3") * 3
+	return total
 
 
 func get_move_saver_chance() -> float:
-	var level = get_upgrade_level("moves", "move_saver")
+	var level = get_skill_node_level("move_saver")
 	return level * 0.05  # +5% chance per level
 
 
 func get_emergency_moves() -> int:
-	return get_upgrade_level("moves", "emergency_moves")  # +1 per level
+	return get_skill_node_level("emergency_reserve")  # +1 per level
 
 
 func get_striped_chance_bonus() -> float:
-	var level = get_upgrade_level("specials", "striped_chance")
-	return level * 0.03  # +3% per level
+	var bonus: float = 0.0
+	bonus += get_skill_node_level("striped_chance_1") * 0.04
+	bonus += get_skill_node_level("striped_chance_2") * 0.06
+	return bonus
 
 
 func get_wrapped_chance_bonus() -> float:
-	var level = get_upgrade_level("specials", "wrapped_chance")
-	return level * 0.03  # +3% per level
+	var bonus: float = 0.0
+	bonus += get_skill_node_level("wrapped_chance_1") * 0.04
+	bonus += get_skill_node_level("wrapped_chance_2") * 0.06
+	return bonus
 
 
 func get_color_bomb_chance_bonus() -> float:
-	var level = get_upgrade_level("specials", "color_bomb_chance")
-	return level * 0.02  # +2% per level
+	var level = get_skill_node_level("colorbomb_chance")
+	return level * 0.03  # +3% per level
 
 
 func get_striped_power_bonus() -> int:
-	return get_upgrade_level("specials", "striped_power")  # +1 row/col per level
+	return get_skill_node_level("striped_power")  # +1 row/col per level
 
 
 func get_wrapped_power_bonus() -> int:
-	return get_upgrade_level("specials", "wrapped_power")  # +1 radius per level
+	return get_skill_node_level("wrapped_power")  # +1 radius per level
 
 
 func get_combo_multiplier_bonus() -> float:
-	var level = get_upgrade_level("combos", "combo_multiplier")
-	return level * 0.1  # +0.1 per level (1.5 -> 1.6, etc.)
+	var bonus: float = 0.0
+	bonus += get_skill_node_level("combo_base") * 0.1
+	bonus += get_skill_node_level("combo_master") * 0.15
+	bonus += get_skill_node_level("combo_legend") * 0.2
+	return bonus
 
 
 func get_cascade_boost() -> float:
-	var level = get_upgrade_level("combos", "cascade_boost")
-	return 1.0 + (level * 0.05)  # +5% per cascade per level
+	var level = get_skill_node_level("cascade_boost")
+	return 1.0 + (level * 0.08)  # +8% per cascade per level
 
 
 func get_chain_reaction_chance() -> float:
-	var level = get_upgrade_level("combos", "chain_reaction")
+	var level = get_skill_node_level("chain_reaction")
 	return level * 0.03  # +3% per level
+
+
+func has_colorbomb_creates_striped() -> bool:
+	return get_skill_node_level("colorbomb_power") > 0
 
 
 # ============ ABILITY FUNCTIONS ============
@@ -639,13 +680,31 @@ func save_progression() -> void:
 		"upgrades": upgrades,
 		"abilities": abilities,
 		"color_mastery": color_mastery,
-		"campaign": campaign
+		"campaign": campaign,
+		"skill_tree_nodes": skill_tree_nodes
 	}
 	SaveManager.save_story_progression(data)
 
 
 func load_progression() -> void:
 	var data = SaveManager.load_story_progression()
+
+	# Always reset to defaults first, then load saved data
+	# This ensures empty/new slots start fresh
+	currencies = {
+		"slime_essence": 0,
+		"star_dust": 0,
+		"color_crystals": {
+			"red": 0, "orange": 0, "yellow": 0,
+			"green": 0, "blue": 0, "purple": 0
+		}
+	}
+	skill_tree_nodes = {}
+	color_mastery = {
+		"red": 0, "orange": 0, "yellow": 0,
+		"green": 0, "blue": 0, "purple": 0
+	}
+
 	if data.is_empty():
 		return
 
@@ -659,6 +718,8 @@ func load_progression() -> void:
 		color_mastery = data.color_mastery
 	if data.has("campaign"):
 		campaign = data.campaign
+	if data.has("skill_tree_nodes"):
+		skill_tree_nodes = data.skill_tree_nodes
 
 
 func reset_progression() -> void:
@@ -714,5 +775,8 @@ func reset_progression() -> void:
 		"completed_levels": [],
 		"level_stars": {}
 	}
+
+	# Reset skill tree nodes
+	skill_tree_nodes = {}
 
 	save_progression()
